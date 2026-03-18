@@ -3,145 +3,28 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --color-gold: #F5A623;
-    --color-gold-light: #FFC04A;
-    --color-green: #3DDC84;
-    --color-green-light: #5AEAA0;
-  }
-
-  * {
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    @apply bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-100;
-    @apply transition-colors duration-300;
-  }
-
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-700 rounded-full;
-  }
-
-  /* Textarea */
-  textarea {
-    @apply resize-none outline-none;
-  }
-
-  /* Selection */
-  ::selection {
-    background: rgba(245, 166, 35, 0.3);
-  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { @apply bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-100 transition-colors duration-300; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-300 dark:bg-gray-700 rounded-full; }
+  ::selection { background: rgba(245,166,35,0.25); }
+  textarea { @apply resize-none outline-none; }
 }
 
 @layer components {
-  .card {
-    @apply bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-2xl;
-  }
-
-  .btn-gold {
-    @apply bg-brand-gold hover:bg-brand-gold-light active:scale-95 text-gray-900 font-syne font-bold rounded-xl transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
-  }
-
-  .btn-outline {
-    @apply bg-transparent border border-brand-gold text-brand-gold hover:bg-brand-gold/10 active:scale-95 rounded-xl font-dm font-medium transition-all duration-150;
-  }
-
-  .btn-green {
-    @apply bg-brand-green hover:bg-brand-green-light active:scale-95 text-gray-900 font-syne font-extrabold rounded-xl transition-all duration-150;
-  }
-
-  .input-field {
-    @apply w-full bg-transparent outline-none text-gray-900 dark:text-gray-100 font-dm text-[15px] placeholder:text-gray-400 dark:placeholder:text-gray-600;
-  }
-
-  .ticker-item {
-    @apply font-mono text-xs text-gray-500 dark:text-gray-500 whitespace-nowrap;
-  }
-
-  .stat-card {
-    @apply card p-4 rounded-xl;
-  }
-
-  .fee-bar-bg {
-    @apply bg-light-surface2 dark:bg-dark-surface2 rounded-full h-2 overflow-hidden flex-1;
-  }
-
-  .screen-fade {
-    animation: fadeUp 0.35s ease forwards;
-  }
-
-  .shimmer-line {
-    @apply rounded-lg;
-    background: linear-gradient(
-      90deg,
-      theme(colors.light.surface2) 25%,
-      theme(colors.light.surface) 50%,
-      theme(colors.light.surface2) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.8s linear infinite;
-  }
-
-  .dark .shimmer-line {
-    background: linear-gradient(
-      90deg,
-      theme(colors.dark.surface2) 25%,
-      theme(colors.dark.surface) 50%,
-      theme(colors.dark.surface2) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.8s linear infinite;
-  }
+  .card { @apply bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-2xl; }
+  .btn-gold { @apply bg-brand-gold hover:bg-brand-gold-light active:scale-95 text-gray-900 font-syne font-bold rounded-xl transition-all duration-150; }
+  .btn-outline { @apply bg-transparent border border-brand-gold text-brand-gold hover:bg-brand-gold/10 active:scale-95 rounded-xl font-dm font-medium transition-all duration-150; }
+  .btn-green { @apply bg-brand-green hover:bg-brand-green-light active:scale-95 text-gray-900 font-syne font-extrabold rounded-xl transition-all duration-150; }
 }
 
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+@keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes pulseDot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
-@keyframes scrollLeft {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
-
-@keyframes counterUp {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Ticker scroll */
-.ticker-scroll {
-  animation: scrollLeft 22s linear infinite;
-}
-.ticker-scroll:hover {
-  animation-play-state: paused;
-}
+.ticker-scroll { animation: scrollLeft 22s linear infinite; }
+.ticker-scroll:hover { animation-play-state: paused; }

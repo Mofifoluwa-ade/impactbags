@@ -15,7 +15,6 @@ export interface FeeSplit {
   pct: number;
   color: string;
   description: string;
-  walletType: "cause" | "holders" | "creator" | "platform";
 }
 
 export interface LiveLaunch {
@@ -27,6 +26,7 @@ export interface LiveLaunch {
   raised: number;
   supporters: number;
   change24h: number;
+  country: string;
 }
 
 export interface LaunchStats {
@@ -34,12 +34,6 @@ export interface LaunchStats {
   supporters: number;
   causeAmount: number;
   creatorAmount: number;
-  volume24h: number;
-  txCount: number;
-}
-
-export interface GenerateApiRequest {
-  cause: string;
 }
 
 export interface GenerateApiResponse {
@@ -47,4 +41,11 @@ export interface GenerateApiResponse {
   error?: string;
 }
 
-export type Theme = "light" | "dark" | "system";
+export type AuthMethod = "phantom" | "solflare" | "backpack" | "google" | "github" | "bags";
+
+export interface ConnectedUser {
+  method: AuthMethod;
+  address?: string;
+  displayName?: string;
+  avatar?: string;
+}
