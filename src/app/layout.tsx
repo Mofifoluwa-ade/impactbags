@@ -1,0 +1,55 @@
+import type { Metadata } from "next";
+import { Syne, DM_Sans, DM_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import "./globals.css";
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-syne",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-dm-mono",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "ImpactBags — Community Tokens, Real Change",
+  description:
+    "Launch a Solana token for your community cause in 60 seconds. Solar panels, school fees, clean water — fund it with crypto, prove it with receipts.",
+  keywords: ["solana", "bags", "community", "nigeria", "defi", "impact", "token"],
+  openGraph: {
+    title: "ImpactBags — Community Tokens, Real Change",
+    description: "Launch a community impact token on Solana in 60 seconds.",
+    type: "website",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${syne.variable} ${dmSans.variable} ${dmMono.variable}`}
+    >
+      <body className="font-dm antialiased min-h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
+    </html>
+  );
+}
