@@ -101,9 +101,7 @@ export function LaunchedScreen({ token, onReset }: LaunchedScreenProps) {
       <div
         className="launched-gradient rounded-2xl p-6 text-center space-y-2"
         style={{
-          border: "1px solid",
-          borderColor: "var(--green)",
-          borderOpacity: 0.3,
+          border: "1px solid rgba(61, 220, 132, 0.3)",
         }}
       >
         <div className="text-4xl mb-2">🎉</div>
