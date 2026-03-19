@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, ExternalLink, AlertCircle } from "lucide-react";
+import { X, Loader2, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn, shortenAddress } from "@/lib/utils";
 import type { AuthMethod, ConnectedUser } from "@/types";
 
@@ -12,7 +13,7 @@ interface AuthModalProps {
   onConnected: (user: ConnectedUser) => void;
 }
 
-// ── Brand logos as inline SVG ─────────────────────────────────────────────────
+// ── Brand SVG logos ───────────────────────────────────────────────────────────
 
 function PhantomLogo() {
   return (
@@ -62,7 +63,7 @@ function GoogleLogo() {
       <rect width="128" height="128" rx="28" fill="white"/>
       <path d="M112 65.6c0-3.6-.3-7.1-.9-10.4H64v19.7h26.9c-1.2 6.2-4.7 11.4-10 14.9v12.4h16.2C107.6 93.1 112 80.3 112 65.6z" fill="#4285F4"/>
       <path d="M64 114c13.5 0 24.8-4.5 33.1-12.1L80.9 89.5C76.4 92.5 70.6 94.3 64 94.3c-13.1 0-24.2-8.8-28.1-20.7H19.2v12.8C27.5 104.1 44.7 114 64 114z" fill="#34A853"/>
-      <path d="M35.9 73.6c-1-.3-2-5-2-9.6s1-9.3 2-9.6V41.6H19.2A48.4 48.4 0 0015.2 64c0 7.8 1.9 15.2 5 21.8l16.7-12.2z" fill="#FBBC05"/>
+      <path d="M35.9 73.6c-1-3-2-6.2-2-9.6s1-6.6 2-9.6V41.6H19.2A48.4 48.4 0 0015.2 64c0 7.8 1.9 15.2 5 21.8l16.7-12.2z" fill="#FBBC05"/>
       <path d="M64 33.7c7.4 0 14.1 2.5 19.3 7.5l14.5-14.5C89 18.6 77.5 14 64 14c-19.3 0-36.5 10.9-45 27l16.7 12.2C39.8 42.5 51 33.7 64 33.7z" fill="#EA4335"/>
     </svg>
   );
@@ -93,19 +94,19 @@ const OPTIONS: WalletOption[] = [
   { id: "phantom",  label: "Phantom",  description: "Most popular Solana wallet",     Logo: PhantomLogo,  type: "wallet", installUrl: "https://phantom.app",  accentColor: "#AB9FF2" },
   { id: "solflare", label: "Solflare", description: "Non-custodial Solana wallet",    Logo: SolflareLogo, type: "wallet", installUrl: "https://solflare.com", accentColor: "#FC7B24" },
   { id: "backpack", label: "Backpack", description: "Multi-chain wallet by xNFT",     Logo: BackpackLogo, type: "wallet", installUrl: "https://backpack.app", accentColor: "#E33E3F" },
-  { id: "bags",     label: "Bags",     description: "Sign in with your Bags account", Logo: BagsLogo,     type: "social",                                     accentColor: "#F5A623" },
+  { id: "bags",     label: "Bags",     description: "Continue on bags.fm",            Logo: BagsLogo,     type: "social",                                     accentColor: "#F5A623" },
   { id: "google",   label: "Google",   description: "Sign in with Google",            Logo: GoogleLogo,   type: "social",                                     accentColor: "#4285F4" },
   { id: "github",   label: "GitHub",   description: "Sign in with GitHub",            Logo: GitHubLogo,   type: "social",                                     accentColor: "#6e5494" },
 ];
 
-// ── Wallet connection helpers ─────────────────────────────────────────────────
+// ── Wallet detection + connection ─────────────────────────────────────────────
 
 function detectWallet(id: AuthMethod): boolean {
   if (typeof window === "undefined") return false;
   if (id === "phantom")  return !!(window as any).solana?.isPhantom;
   if (id === "solflare") return !!(window as any).solflare?.isSolflare;
   if (id === "backpack") return !!(window as any).xnft?.solana;
-  return true;
+  return false;
 }
 
 async function connectSolanaWallet(id: "phantom" | "solflare" | "backpack"): Promise<string> {
@@ -127,13 +128,14 @@ async function connectSolanaWallet(id: "phantom" | "solflare" | "backpack"): Pro
   return p.publicKey.toString();
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 
 export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
-  const [loading, setLoading] = useState<AuthMethod | null>(null);
-  const [error, setError]     = useState<string | null>(null);
+  const [loading,  setLoading]  = useState<AuthMethod | null>(null);
+  const [error,    setError]    = useState<string | null>(null);
   const [detected, setDetected] = useState<Record<string, boolean>>({});
 
+  // Detect installed wallets whenever modal opens
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
@@ -142,6 +144,7 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
     setDetected(d);
   }, [isOpen]);
 
+  // Escape key closes
   useEffect(() => {
     if (!isOpen) return;
     const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -152,22 +155,53 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
   const handleConnect = useCallback(async (opt: WalletOption) => {
     setLoading(opt.id);
     setError(null);
+
     try {
+      // ── Solana wallets: call browser extension directly ──────────────────
       if (opt.id === "phantom" || opt.id === "solflare" || opt.id === "backpack") {
         const address = await connectSolanaWallet(opt.id);
         onConnected({ method: opt.id, address, displayName: shortenAddress(address) });
         onClose();
         return;
       }
-      // Social: simulate OAuth (replace with NextAuth in production)
-      await new Promise(r => setTimeout(r, 1100));
-      onConnected({ method: opt.id, displayName: opt.label + " User", avatar: opt.label[0] });
-      onClose();
+
+      // ── Google: real OAuth via NextAuth ──────────────────────────────────
+      if (opt.id === "google") {
+        // signIn() redirects the browser to Google's OAuth consent screen.
+        // After the user approves, Google redirects back to /api/auth/callback/google,
+        // NextAuth sets a session cookie, then redirects to callbackUrl.
+        await signIn("google", {
+          callbackUrl: window.location.href, // return to current page
+          redirect: true,                    // full page redirect — real OAuth
+        });
+        // Code below this line won't execute because the page redirects.
+        return;
+      }
+
+      // ── GitHub: real OAuth via NextAuth ──────────────────────────────────
+      if (opt.id === "github") {
+        await signIn("github", {
+          callbackUrl: window.location.href,
+          redirect: true,
+        });
+        return;
+      }
+
+      // ── Bags: redirect to bags.fm OAuth (no SDK available yet) ───────────
+      if (opt.id === "bags") {
+        // Bags doesn't currently publish a public OAuth endpoint.
+        // This deep-links to bags.fm so the user can authenticate there
+        // and come back. Replace with their OAuth URL if/when published.
+        window.open("https://bags.fm", "_blank", "noopener,noreferrer");
+        setError('Bags OAuth is not yet publicly available. Visit <a href="https://bags.fm" target="_blank" rel="noopener" class="underline font-medium">bags.fm ↗</a> and connect your wallet there.');
+        return;
+      }
+
     } catch (err: any) {
       const msg: string = err?.message ?? "Connection failed";
       if (msg.includes("not installed") && opt.installUrl) {
-        setError(`${opt.label} not detected. <a href="${opt.installUrl}" target="_blank" rel="noopener" class="underline font-medium">Install it ↗</a>`);
-      } else if (/reject|cancel/i.test(msg)) {
+        setError(`${opt.label} wallet not detected. <a href="${opt.installUrl}" target="_blank" rel="noopener" class="underline font-medium">Install it here ↗</a>`);
+      } else if (/reject|cancel|denied/i.test(msg)) {
         setError("Connection cancelled.");
       } else {
         setError(msg);
@@ -183,7 +217,7 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        /* ── Backdrop: fixed fullscreen, flex-centred ── */
+        /* Backdrop: full-screen flex container — modal is centred as a flex child */
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -192,13 +226,13 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={onClose}
         >
-          {/* ── Modal panel ── */}
+          {/* Modal panel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 14 }}
             animate={{ opacity: 1, scale: 1,    y: 0  }}
             exit={{   opacity: 0, scale: 0.94, y: 14 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
             className={cn(
               "relative w-full max-w-md",
               "bg-light-surface dark:bg-dark-surface",
@@ -228,7 +262,7 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
               </button>
             </div>
 
-            {/* Error */}
+            {/* Error banner */}
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -250,7 +284,7 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
               Solana Wallets
             </p>
             <div className="flex flex-col gap-2 mb-5">
-              {wallets.map((opt) => {
+              {wallets.map(opt => {
                 const isInstalled = detected[opt.id];
                 const isLoading   = loading === opt.id;
                 return (
@@ -261,53 +295,39 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
                     className={cn(
                       "flex items-center gap-3 w-full p-3.5 rounded-2xl text-left transition-all duration-150",
                       "bg-light-surface2 dark:bg-dark-surface2",
-                      "border border-light-border dark:border-dark-border",
-                      "hover:bg-opacity-80 disabled:opacity-50 disabled:cursor-not-allowed",
-                      isLoading   && "opacity-80"
+                      "border border-transparent",
+                      "hover:border-opacity-60 disabled:opacity-50 disabled:cursor-not-allowed"
                     )}
-                    style={isLoading || isInstalled
-                      ? { borderColor: opt.accentColor + "60" }
-                      : undefined}
-                    onMouseEnter={e => { if (!isLoading) (e.currentTarget as HTMLElement).style.borderColor = opt.accentColor + "50"; }}
-                    onMouseLeave={e => { if (!isLoading && !isInstalled) (e.currentTarget as HTMLElement).style.borderColor = ""; }}
+                    style={{
+                      borderColor: (isInstalled || isLoading)
+                        ? opt.accentColor + "55"
+                        : "transparent",
+                    }}
+                    onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.borderColor = opt.accentColor + "44"; }}
+                    onMouseLeave={e => { if (!isInstalled && !isLoading) (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
                   >
-                    {/* Logo */}
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-white/5 border border-light-border dark:border-dark-border">
                       {isLoading
                         ? <Loader2 size={18} className="animate-spin" style={{ color: opt.accentColor }} />
                         : <opt.Logo />
                       }
                     </div>
-
-                    {/* Label */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {opt.label}
-                        </span>
-                        {isInstalled && !isLoading && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-green/20 text-brand-green font-medium">
-                            Detected
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{opt.label}</span>
+                        {isInstalled && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-green/20 text-brand-green font-medium flex items-center gap-1">
+                            <CheckCircle2 size={9} /> Detected
                           </span>
                         )}
                         {!isInstalled && opt.installUrl && (
-                          <a
-                            href={opt.installUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-brand-gold transition-colors"
-                          >
+                          <a href={opt.installUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-brand-gold transition-colors">
                             Install <ExternalLink size={9} />
                           </a>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
-                        {opt.description}
-                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{opt.description}</div>
                     </div>
-
-                    {/* Live dot */}
                     {isInstalled && !isLoading && (
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: opt.accentColor }} />
                     )}
@@ -325,13 +345,22 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
 
             {/* ── Social grid ── */}
             <div className="grid grid-cols-3 gap-2">
-              {socials.map((opt) => {
+              {socials.map(opt => {
                 const isLoading = loading === opt.id;
+                const isGoogle  = opt.id === "google";
+                const isGitHub  = opt.id === "github";
+                const needsSetup = isGoogle
+                  ? !process.env.NEXT_PUBLIC_GOOGLE_CONFIGURED
+                  : isGitHub
+                  ? !process.env.NEXT_PUBLIC_GITHUB_CONFIGURED
+                  : false;
+
                 return (
                   <button
                     key={opt.id}
                     onClick={() => handleConnect(opt)}
                     disabled={!!loading}
+                    title={opt.description}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3.5 rounded-2xl transition-all duration-150",
                       "bg-light-surface2 dark:bg-dark-surface2",
@@ -346,15 +375,21 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
                         : <opt.Logo />
                       }
                     </div>
-                    <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                      {opt.label}
-                    </span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{opt.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            <p className="text-center text-[11px] text-gray-400 dark:text-gray-600 mt-5">
+            {/* Setup hint shown when env vars not configured */}
+            <div className="mt-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30">
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                <strong>Developers:</strong> Google &amp; GitHub login require OAuth credentials in <code className="font-mono bg-amber-100 dark:bg-amber-900/30 px-1 rounded">.env.local</code>.
+                See <code className="font-mono bg-amber-100 dark:bg-amber-900/30 px-1 rounded">.env.local.example</code> for setup instructions.
+              </p>
+            </div>
+
+            <p className="text-center text-[11px] text-gray-400 dark:text-gray-600 mt-4">
               By connecting you agree to our Terms of Service &amp; Privacy Policy
             </p>
           </motion.div>

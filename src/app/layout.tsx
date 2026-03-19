@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, DM_Sans, DM_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import "./globals.css";
 
 const syne = Syne({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-syne", display: "swap" });
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`${syne.variable} ${dmSans.variable} ${dmMono.variable}`}>
       <body className="font-dm antialiased min-h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300">
-        <ThemeProvider>{children}</ThemeProvider>
+        <AuthSessionProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );
