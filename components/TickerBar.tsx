@@ -40,7 +40,7 @@ export function TickerBar() {
               >
                 <span>{l.emoji}</span>
                 <span style={{ color: "var(--gold)" }}>{l.ticker}</span>
-                <span style={{ color: "var(--green)" }}>{l.change}</span>
+                <span style={{ color: "var(--green)" }}>{l.change24h}%</span>
                 <span
                   style={{
                     color: "var(--border-hover)",

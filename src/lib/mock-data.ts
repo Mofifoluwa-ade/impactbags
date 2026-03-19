@@ -17,3 +17,9 @@ export const LIVE_LAUNCHES = [
   { id: "7", emoji: "⚡", name: "POWERGRID", ticker: "$GRID", cause: "Electricity for off-grid villages in India", raised: 9100, supporters: 301, change24h: 6.2, country: "🇮🇳" },
   { id: "8", emoji: "🎓", name: "SCHOLAR", ticker: "$GRAD", cause: "University scholarships in Ghana", raised: 6780, supporters: 247, change24h: 11.8, country: "🇬🇭" },
 ];
+export const FEE_SPLITS = [
+  { label: "Cause wallet", pct: 40, color: "#3DDC84", description: "Goes directly to fund the community project on-chain" },
+  { label: "Holders (cashback)", pct: 30, color: "#F5A623", description: "Redistributed to every token holder on each trade" },
+  { label: "You (creator)", pct: 20, color: "#7EB8F7", description: "Your reward for launching and growing the cause" },
+  { label: "Platform fee", pct: 10, color: "#B07EF7", description: "Keeps ImpactBags running and building" },
+];
