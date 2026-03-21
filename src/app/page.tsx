@@ -39,8 +39,11 @@ function Navbar({ user, onConnect, onDisconnect }: { user: ConnectedUser | null;
           {[["#how-it-works", "How it works"], ["#launches", "Launches"], ["#categories", "Categories"]].map(([href, label]) => (
             <a key={href} href={href} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">{label}</a>
           ))}
+          <Link href="/docs" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+            Docs
+          </Link>
           <a href="https://dev.bags.fm" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-            Docs <ExternalLink size={11} />
+            Bags <ExternalLink size={11} />
           </a>
         </nav>
 
