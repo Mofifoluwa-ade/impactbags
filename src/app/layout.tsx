@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Syne, DM_Sans, DM_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthSessionProvider } from "@/components/AuthSessionProvider";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const syne = Syne({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-syne", display: "swap" });
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthSessionProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </AuthSessionProvider>
+        <Analytics />
       </body>
     </html>
   );
