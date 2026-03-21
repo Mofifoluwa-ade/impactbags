@@ -63,6 +63,9 @@ function Navbar({ user, onConnect, onDisconnect }: { user: ConnectedUser | null;
               <button onClick={onConnect} className="hidden sm:block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors px-3 py-2">
                 Sign in
               </button>
+              <Link href="/waitlist" className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400 hover:border-brand-gold/40 hover:text-brand-gold transition-all">
+                Join waitlist
+              </Link>
               <button onClick={onConnect} className="btn-gold px-4 py-2 text-sm flex items-center gap-1.5">
                 <Wallet size={14} /> Get started
               </button>
