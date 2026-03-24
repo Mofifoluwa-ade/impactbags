@@ -1,34 +1,29 @@
-import fs from "fs";
-import path from "path";
+import { Redis } from "@upstash/redis";
 import type { WaitlistEntry, WaitlistStats } from "@/types/waitlist";
 
-// Vercel writable path — also works locally
-const STORE_PATH = path.join("/tmp", "impactbags-waitlist.json");
+const redis = new Redis({
+  url: process.env.STORAGE_URL!,
+  token: process.env.STORAGE_TOKEN!,
+});
 
-function readStore(): WaitlistEntry[] {
-  try {
-    if (!fs.existsSync(STORE_PATH)) return [];
-    const raw = fs.readFileSync(STORE_PATH, "utf8");
-    return JSON.parse(raw) as WaitlistEntry[];
-  } catch {
-    return [];
-  }
+async function readStore(): Promise<WaitlistEntry[]> {
+  const entries = await redis.get<WaitlistEntry[]>("waitlist");
+  return entries ?? [];
 }
 
-function writeStore(entries: WaitlistEntry[]): void {
-  fs.writeFileSync(STORE_PATH, JSON.stringify(entries, null, 2), "utf8");
+async function writeStore(entries: WaitlistEntry[]): Promise<void> {
+  await redis.set("waitlist", entries);
 }
 
-export function getAllEntries(): WaitlistEntry[] {
-  return readStore().sort(
+export async function getAllEntries(): Promise<WaitlistEntry[]> {
+  const entries = await readStore();
+  return entries.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
 
-export function addEntry(entry: Omit<WaitlistEntry, "id" | "createdAt">): WaitlistEntry {
-  const entries = readStore();
-
-  // Deduplicate by email
+export async function addEntry(entry: Omit<WaitlistEntry, "id" | "createdAt">): Promise<WaitlistEntry> {
+  const entries = await readStore();
   const existing = entries.find(
     (e) => e.email.toLowerCase() === entry.email.toLowerCase()
   );
@@ -41,12 +36,12 @@ export function addEntry(entry: Omit<WaitlistEntry, "id" | "createdAt">): Waitli
   };
 
   entries.push(newEntry);
-  writeStore(entries);
+  await writeStore(entries);
   return newEntry;
 }
 
-export function getStats(): WaitlistStats {
-  const entries = readStore();
+export async function getStats(): Promise<WaitlistStats> {
+  const entries = await readStore();
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const weekStart = todayStart - 6 * 24 * 60 * 60 * 1000;
@@ -58,23 +53,23 @@ export function getStats(): WaitlistStats {
   for (const e of entries) {
     const t = new Date(e.createdAt).getTime();
     if (t >= todayStart) today++;
-    if (t >= weekStart)  thisWeek++;
+    if (t >= weekStart) thisWeek++;
     byRole[e.role] = (byRole[e.role] ?? 0) + 1;
   }
 
   return { total: entries.length, today, thisWeek, byRole };
 }
 
-export function deleteEntry(id: string): boolean {
-  const entries = readStore();
+export async function deleteEntry(id: string): Promise<boolean> {
+  const entries = await readStore();
   const filtered = entries.filter((e) => e.id !== id);
   if (filtered.length === entries.length) return false;
-  writeStore(filtered);
+  await writeStore(filtered);
   return true;
 }
 
-export function exportCSV(): string {
-  const entries = readStore();
+export async function exportCSV(): Promise<string> {
+  const entries = await readStore();
   const header = "id,name,email,role,cause,referral,createdAt";
   const rows = entries.map((e) =>
     [e.id, `"${e.name}"`, e.email, e.role, `"${e.cause ?? ""}"`, `"${e.referral ?? ""}"`, e.createdAt].join(",")
