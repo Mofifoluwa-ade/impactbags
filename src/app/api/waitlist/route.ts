@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? undefined;
 
-    const entry = addEntry({ email: email.toLowerCase().trim(), name: name.trim(), role, cause, referral, ip });
+    const entry = await addEntry({ email: email.toLowerCase().trim(), name: name.trim(), role, cause, referral, ip });
     return NextResponse.json({ ok: true, position: entry.id }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });

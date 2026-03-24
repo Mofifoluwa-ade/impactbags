@@ -17,14 +17,15 @@ export async function GET(req: NextRequest) {
 
   // CSV export
   if (searchParams.get("format") === "csv") {
-    const csv = exportCSV();
-    return new NextResponse(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="waitlist-${Date.now()}.csv"`,
-      },
-    });
-  }
+  const csv = await exportCSV();     // ← await it first
+
+  return new NextResponse(csv, {
+    headers: {
+      "Content-Type": "text/csv",
+      "Content-Disposition": `attachment; filename="waitlist-${Date.now()}.csv"`,
+    },
+  });
+}
 
   const entries = getAllEntries();
   const stats = getStats();
