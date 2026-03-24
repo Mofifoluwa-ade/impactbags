@@ -1,10 +1,7 @@
 import { Redis } from "@upstash/redis";
 import type { WaitlistEntry, WaitlistStats } from "@/types/waitlist";
 
-const redis = new Redis({
-  url: process.env.STORAGE_URL!,
-  token: process.env.STORAGE_TOKEN!,
-});
+const redis = Redis.fromEnv();
 
 async function readStore(): Promise<WaitlistEntry[]> {
   const entries = await redis.get<WaitlistEntry[]>("waitlist");
