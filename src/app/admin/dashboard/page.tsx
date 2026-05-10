@@ -85,15 +85,16 @@ function ConfirmDelete({ entry, onConfirm, onCancel }: { entry: WaitlistEntry; o
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [entries,  setEntries]  = useState<WaitlistEntry[]>([]);
-  const [stats,    setStats]    = useState<WaitlistStats | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState<string | null>(null);
-  const [search,   setSearch]   = useState("");
+  const [entries,    setEntries]    = useState<WaitlistEntry[]>([]);
+  const [stats,      setStats]      = useState<WaitlistStats | null>(null);
+  const [tokenCount, setTokenCount] = useState<number>(0);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
+  const [search,     setSearch]     = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [sortBy,   setSortBy]   = useState<"newest" | "oldest" | "name">("newest");
-  const [toDelete, setToDelete] = useState<WaitlistEntry | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [sortBy,     setSortBy]     = useState<"newest" | "oldest" | "name">("newest");
+  const [toDelete,   setToDelete]   = useState<WaitlistEntry | null>(null);
+  const [deleting,   setDeleting]   = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -105,6 +106,7 @@ export default function DashboardPage() {
       const data = await res.json();
       setEntries(data.entries);
       setStats(data.stats);
+      setTokenCount(data.tokenCount ?? 0);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -241,10 +243,11 @@ export default function DashboardPage() {
 
         {/* Stats grid */}
         {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard label="Total signups" value={stats.total} color="text-brand-gold" />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <StatCard label="Waitlist signups" value={stats.total} color="text-brand-gold" />
             <StatCard label="Today" value={stats.today} color="text-brand-green" sub="new today" />
             <StatCard label="This week" value={stats.thisWeek} sub="last 7 days" />
+            <StatCard label="Tokens launched" value={tokenCount} color="text-brand-green" sub="live on-chain" />
             <StatCard
               label="Top role"
               value={Object.entries(stats.byRole).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—"}

@@ -3,24 +3,53 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useSession, signOut } from "next-auth/react";
 import { AuthModal } from "@/components/AuthModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TickerBar } from "@/components/TickerBar";
-import { STATS, HOW_IT_WORKS, CATEGORIES, LIVE_LAUNCHES } from "@/lib/constants";
+import { HOW_IT_WORKS, CATEGORIES } from "@/lib/constants";
+import type { LiveToken, PlatformStats } from "@/types/token";
 import { cn } from "@/lib/utils";
 import type { ConnectedUser } from "@/types";
 import {
   Wallet, ArrowRight, Zap, Globe, Shield, TrendingUp,
-  ExternalLink, ChevronRight, Star, Users, Activity,
+  ExternalLink, ChevronRight, Star, Users, Activity, LogOut, User,
 } from "lucide-react";
 
-function Navbar({ user, onConnect, onDisconnect }: { user: ConnectedUser | null; onConnect: () => void; onDisconnect: () => void }) {
+function Navbar({ walletUser, onConnect, onWalletDisconnect }: {
+  walletUser: ConnectedUser | null;
+  onConnect: () => void;
+  onWalletDisconnect: () => void;
+}) {
+  const { data: session, status } = useSession(); // real NextAuth session
   const [scrolled, setScrolled] = useState(false);
+  const [dropOpen, setDropOpen] = useState(false);
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn);
     return () => window.removeEventListener("scroll", fn);
   }, []);
+
+  // Wallet takes priority over OAuth session
+  const isConnected = !!(walletUser || session?.user);
+  const displayName = walletUser?.displayName ?? session?.user?.name ?? session?.user?.email?.split("@")[0];
+  const avatar = walletUser?.avatar ?? session?.user?.image;
+  const isLoading = status === "loading";
+
+  const handleDisconnect = async () => {
+    if (walletUser) {
+      try {
+        const win = window as any;
+        if (win.solana?.isConnected) await win.solana.disconnect();
+        if (win.solflare?.isConnected) await win.solflare.disconnect();
+      } catch {}
+      onWalletDisconnect();
+    } else {
+      await signOut({ redirect: false });
+    }
+    setDropOpen(false);
+  };
 
   return (
     <header className={cn("w-full fixed top-0 z-30 transition-all duration-300", scrolled ? "bg-light-bg/90 dark:bg-dark-bg/90 backdrop-blur-md border-b border-light-border dark:border-dark-border" : "bg-transparent")}>
@@ -49,14 +78,39 @@ function Navbar({ user, onConnect, onDisconnect }: { user: ConnectedUser | null;
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          {user ? (
-            <div className="flex items-center gap-2">
-              <Link href="/launch" className="btn-gold px-4 py-2 text-sm flex items-center gap-1.5">
-                Launch token <ArrowRight size={14} />
-              </Link>
-              <button onClick={onDisconnect} className={cn("hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs", "bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border", "text-gray-500 hover:text-red-500 transition-colors")}>
-                {user.displayName}
+
+          {isLoading ? (
+            <div className="h-8 w-20 rounded-xl bg-light-surface2 dark:bg-dark-surface2 animate-pulse" />
+          ) : isConnected ? (
+            <div className="relative">
+              <button
+                onClick={() => setDropOpen(p => !p)}
+                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm", "bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border", "text-gray-700 dark:text-gray-300 hover:border-brand-gold/40 transition-all")}
+              >
+                {avatar && avatar.startsWith("http") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-brand-gold/20 flex items-center justify-center">
+                    <User size={11} className="text-brand-gold" />
+                  </div>
+                )}
+                <span className="font-mono text-xs max-w-[90px] truncate hidden sm:block">{displayName}</span>
               </button>
+
+              {dropOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setDropOpen(false)} />
+                  <div className={cn("absolute right-0 mt-2 w-44 rounded-2xl py-1.5 z-20 shadow-xl", "bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border")}>
+                    <Link href="/launch" onClick={() => setDropOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-surface2 dark:hover:bg-dark-surface2 transition-colors">
+                      ✦ Launch a token
+                    </Link>
+                    <button onClick={handleDisconnect} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
+                      <LogOut size={14} /> {walletUser ? "Disconnect wallet" : "Sign out"}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -78,6 +132,8 @@ function Navbar({ user, onConnect, onDisconnect }: { user: ConnectedUser | null;
 }
 
 function HeroSection({ onConnect, user }: { onConnect: () => void; user: ConnectedUser | null }) {
+  const { data: session } = useSession();
+  const isConnected = !!(user || session?.user);
   return (
     <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* BG glow */}
@@ -106,7 +162,7 @@ function HeroSection({ onConnect, user }: { onConnect: () => void; user: Connect
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            {user ? (
+            {isConnected ? (
               <Link href="/launch" className="btn-gold px-8 py-4 text-base flex items-center gap-2 w-full sm:w-auto justify-center">
                 ✦ Launch your token <ArrowRight size={18} />
               </Link>
@@ -120,15 +176,8 @@ function HeroSection({ onConnect, user }: { onConnect: () => void; user: Connect
             </a>
           </motion.div>
 
-          {/* Social proof */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.25 }} className="flex items-center justify-center gap-6 mt-10 flex-wrap">
-            {STATS.map((s, i) => (
-              <div key={i} className="text-center">
-                <div className="font-syne text-2xl font-extrabold text-gray-900 dark:text-gray-50">{s.value}{s.suffix}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </motion.div>
+          {/* Live stats */}
+          <LiveStats />
         </div>
 
         {/* Ticker */}
@@ -193,7 +242,48 @@ function CategoriesSection() {
   );
 }
 
+function LiveStats() {
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  useEffect(() => {
+    fetch("/api/tokens/stats").then(r => r.json()).then(setStats).catch(() => {});
+  }, []);
+
+  const items = stats ? [
+    { label: "Tokens launched",  value: stats.totalTokens.toLocaleString() },
+    { label: "Total raised",     value: stats.totalRaised >= 1000 ? `$${(stats.totalRaised/1000).toFixed(1)}k` : `$${stats.totalRaised}` },
+    { label: "Countries",        value: stats.countries.toString() + "+" },
+    { label: "On-chain trades",  value: stats.totalTx >= 1000 ? `${(stats.totalTx/1000).toFixed(0)}k+` : stats.totalTx.toString() },
+  ] : [
+    { label: "Tokens launched", value: "—" },
+    { label: "Total raised",    value: "—" },
+    { label: "Countries",       value: "—" },
+    { label: "On-chain trades", value: "—" },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.25 }}
+      className="flex items-center justify-center gap-6 mt-10 flex-wrap">
+      {items.map((s, i) => (
+        <div key={i} className="text-center">
+          <div className="font-syne text-2xl font-extrabold text-gray-900 dark:text-gray-50">{s.value}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{s.label}</div>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
 function LiveLaunchesSection() {
+  const [tokens, setTokens] = useState<LiveToken[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/tokens")
+      .then(r => r.json())
+      .then(d => { setTokens(d.tokens ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
   return (
     <section id="launches" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-8xl mx-auto">
@@ -209,33 +299,45 @@ function LiveLaunchesSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {LIVE_LAUNCHES.map((l, i) => (
-            <motion.div key={l.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35, delay: i * 0.06 }} className={cn("rounded-2xl p-5 bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border", "hover:border-brand-gold/30 hover:shadow-lg transition-all duration-300 cursor-pointer group")}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 rounded-xl bg-light-surface2 dark:bg-dark-surface2 flex items-center justify-center text-2xl">{l.emoji}</div>
-                <div className={cn("text-xs font-mono font-medium px-2 py-1 rounded-lg", l.change24h >= 0 ? "bg-brand-green/10 text-brand-green" : "bg-red-500/10 text-red-400")}>
-                  {l.change24h >= 0 ? "+" : ""}{l.change24h}%
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({length: 4}).map((_, i) => (
+              <div key={i} className="h-52 rounded-2xl bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border animate-pulse" />
+            ))}
+          </div>
+        ) : tokens.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-4xl mb-4">🚀</div>
+            <p className="text-gray-500 dark:text-gray-500 text-lg font-medium">No tokens launched yet.</p>
+            <p className="text-gray-400 dark:text-gray-600 mt-2 text-sm">Be the first to launch a community impact token.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {tokens.map((l, i) => (
+              <motion.div key={l.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35, delay: i * 0.06 }} className={cn("rounded-2xl p-5 bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border", "hover:border-brand-gold/30 hover:shadow-lg transition-all duration-300 cursor-pointer group")}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-light-surface2 dark:bg-dark-surface2 flex items-center justify-center text-2xl">{l.emoji}</div>
+                  <div className={cn("text-xs font-mono font-medium px-2 py-1 rounded-lg", l.change24h >= 0 ? "bg-brand-green/10 text-brand-green" : "bg-red-500/10 text-red-400")}>
+                    {l.change24h >= 0 ? "+" : ""}{l.change24h.toFixed(1)}%
+                  </div>
                 </div>
-              </div>
-              <div className="font-syne font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight mb-0.5 group-hover:text-brand-gold transition-colors">
-                {l.name}
-              </div>
-              <div className="font-mono text-xs text-brand-gold mb-2">{l.ticker} · {l.country}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-500 leading-relaxed mb-3">{l.cause}</div>
-              <div className="flex items-center justify-between pt-3 border-t border-light-border dark:border-dark-border">
-                <div>
-                  <div className="font-syne text-lg font-bold text-brand-green">${l.raised.toLocaleString()}</div>
-                  <div className="text-[11px] text-gray-400 dark:text-gray-600">raised</div>
+                <div className="font-syne font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight mb-0.5 group-hover:text-brand-gold transition-colors">{l.name}</div>
+                <div className="font-mono text-xs text-brand-gold mb-2">${l.ticker}{l.country ? ` · ${l.country}` : ""}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-500 leading-relaxed mb-3">{l.causeWallet}</div>
+                <div className="flex items-center justify-between pt-3 border-t border-light-border dark:border-dark-border">
+                  <div>
+                    <div className="font-syne text-lg font-bold text-brand-green">${l.raised.toLocaleString()}</div>
+                    <div className="text-[11px] text-gray-400 dark:text-gray-600">raised</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-syne text-lg font-bold text-gray-700 dark:text-gray-300">{l.supporters}</div>
+                    <div className="text-[11px] text-gray-400 dark:text-gray-600">supporters</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-syne text-lg font-bold text-gray-700 dark:text-gray-300">{l.supporters}</div>
-                  <div className="text-[11px] text-gray-400 dark:text-gray-600">supporters</div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -273,6 +375,8 @@ function FeaturesSection() {
 }
 
 function CTASection({ onConnect, user }: { onConnect: () => void; user: ConnectedUser | null }) {
+  const { data: session } = useSession();
+  const isConnected = !!(user || session?.user);
   return (
     <section className="py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto text-center">
@@ -283,7 +387,7 @@ function CTASection({ onConnect, user }: { onConnect: () => void; user: Connecte
           <p className="text-lg text-gray-500 dark:text-gray-500 mb-8">
             Join thousands of communities using ImpactBags to turn crypto trading into real-world change.
           </p>
-          {user ? (
+          {isConnected ? (
             <Link href="/launch" className="btn-gold px-10 py-5 text-lg inline-flex items-center gap-2">
               ✦ Launch your token <ArrowRight size={20} />
             </Link>
@@ -324,12 +428,16 @@ function Footer() {
 
 export default function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
-  const [user, setUser] = useState<ConnectedUser | null>(null);
+  const [walletUser, setWalletUser] = useState<ConnectedUser | null>(null);
+  const { data: session } = useSession();
+
+  // Either wallet connected or OAuth session = "logged in" for local UI purposes
+  const user = walletUser ?? (session?.user ? { method: "google" as const, displayName: session.user.name ?? session.user.email ?? "User" } : null);
 
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg">
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onConnected={(u) => { setUser(u); setAuthOpen(false); }} />
-      <Navbar user={user} onConnect={() => setAuthOpen(true)} onDisconnect={() => setUser(null)} />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onConnected={(u) => { setWalletUser(u); setAuthOpen(false); }} />
+      <Navbar walletUser={walletUser} onConnect={() => setAuthOpen(true)} onWalletDisconnect={() => setWalletUser(null)} />
       <main className="flex-1">
         <HeroSection onConnect={() => setAuthOpen(true)} user={user} />
         <HowItWorks />

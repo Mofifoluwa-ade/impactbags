@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAllEntries, deleteEntry, exportCSV, getStats } from "@/lib/waitlist";
+import { getTokenCount } from "@/lib/tokens";
 
 function isAuthed(): boolean {
   const session = cookies().get("admin_session")?.value;
@@ -15,21 +16,23 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
 
-  // CSV export
   if (searchParams.get("format") === "csv") {
-  const csv = await exportCSV();     // ← await it first
+    const csv = exportCSV();
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="waitlist-${Date.now()}.csv"`,
+      },
+    });
+  }
 
-  return new NextResponse(csv, {
-    headers: {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="waitlist-${Date.now()}.csv"`,
-    },
-  });
-}
+  const [entries, stats, tokenCount] = await Promise.all([
+    getAllEntries(),
+    getStats(),
+    getTokenCount(),
+  ]);
 
-  const entries = getAllEntries();
-  const stats = getStats();
-  return NextResponse.json({ entries, stats });
+  return NextResponse.json({ entries, stats, tokenCount });
 }
 
 export async function DELETE(req: NextRequest) {

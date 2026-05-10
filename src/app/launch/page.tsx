@@ -96,8 +96,7 @@ export default function LaunchPage() {
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg">
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onConnected={(u) => { setUser(u); setAuthOpen(false); if (screen === "preview" && token) setScreen("launched"); }} />
-     <Navbar walletUser={user} onWalletChange={setUser} showLaunchBtn={false} />
-
+      <Navbar walletUser={user} onWalletChange={setUser} showLaunchBtn={false} />
       <main className="flex-1 w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Page header */}
         <div className="mb-8">
