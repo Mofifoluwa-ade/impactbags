@@ -3,7 +3,7 @@ import path from "path";
 import type { WaitlistEntry, WaitlistStats } from "@/types/waitlist";
 
 // Vercel writable path — also works locally
-const STORE_PATH = path.join("/tmp", "impactbags-waitlist.json");
+const STORE_PATH = path.join("/tmp", "impactai-waitlist.json");
 
 function readStore(): WaitlistEntry[] {
   try {

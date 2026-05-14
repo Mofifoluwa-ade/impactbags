@@ -4,7 +4,7 @@ export const FEE_SPLITS: FeeSplit[] = [
   { label: "Cause wallet", pct: 40, color: "#3DDC84", description: "Goes directly to fund the community project on-chain" },
   { label: "Holders (cashback)", pct: 30, color: "#F5A623", description: "Redistributed to every token holder on each trade" },
   { label: "You (creator)", pct: 20, color: "#7EB8F7", description: "Your reward for launching and growing the cause" },
-  { label: "Platform fee", pct: 10, color: "#B07EF7", description: "Keeps ImpactBags running and building" },
+  { label: "Platform fee", pct: 10, color: "#B07EF7", description: "Keeps ImpactAI running and building" },
 ];
 
 export const LIVE_LAUNCHES: LiveLaunch[] = [
@@ -27,7 +27,7 @@ export const EXAMPLE_CAUSES = [
   { emoji: "⚡", text: "Bring electricity to 50 off-grid families in Tanzania" },
 ];
 
-export const AI_GENERATE_PROMPT = (cause: string) => `You are a creative crypto token naming AI for a global community impact platform called ImpactBags built on Solana.
+export const AI_GENERATE_PROMPT = (cause: string) => `You are a creative crypto token naming AI for a global community impact platform called ImpactAI built on Solana.
 
 A user wants to launch a community impact token for this cause: "${cause}"
 

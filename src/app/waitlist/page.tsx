@@ -84,7 +84,7 @@ export default function WaitlistPage() {
             </div>
             <span className="font-syne font-extrabold text-base">
               <span className="text-brand-gold">Impact</span>
-              <span className="text-brand-green">Bags</span>
+              <span className="text-brand-green">AI</span>
             </span>
           </Link>
           <ThemeToggle />
@@ -105,7 +105,7 @@ export default function WaitlistPage() {
             </h1>
 
             <p className="text-lg text-gray-500 dark:text-gray-400 leading-relaxed mb-10">
-              ImpactBags is in private beta. Join the waitlist and get early access, a founding member badge, and a fee boost when we launch publicly on Solana.
+              ImpactAI is in private beta. Join the waitlist and get early access, a founding member badge, and a fee boost when we launch publicly on Solana.
             </p>
 
             {/* Perks */}
@@ -178,7 +178,7 @@ export default function WaitlistPage() {
 
                   <div className="flex flex-col gap-3">
                     <a
-                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("I just joined the @ImpactBags waitlist — launch community impact tokens on Solana in 60 seconds. Join me: " + (typeof window !== "undefined" ? window.location.href : ""))}`}
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("I just joined the @ImpactAI waitlist — launch community impact tokens on Solana in 60 seconds. Join me: " + (typeof window !== "undefined" ? window.location.href : ""))}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn-gold w-full py-3 text-sm flex items-center justify-center gap-2"
@@ -186,7 +186,7 @@ export default function WaitlistPage() {
                       Share on X to move up the queue
                     </a>
                     <Link href="/" className="btn-outline w-full py-3 text-sm flex items-center justify-center gap-2">
-                      Back to ImpactBags <ArrowRight size={14} />
+                      Back to ImpactAI <ArrowRight size={14} />
                     </Link>
                   </div>
                 </motion.div>

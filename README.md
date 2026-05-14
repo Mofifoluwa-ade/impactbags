@@ -126,7 +126,7 @@ src/
 | Animations | Framer Motion |
 | Icons | Lucide React |
 | Theming | next-themes |
-| AI | Anthropic Claude (claude-sonnet-4) |
+| AI | Google Gemini (gemini-1.5-flash) |
 | Blockchain | Solana via Bags SDK |
 | Deploy | Vercel (free tier) |
 

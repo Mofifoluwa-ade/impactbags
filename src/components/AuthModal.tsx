@@ -244,7 +244,7 @@ export function AuthModal({ isOpen, onClose, onConnected }: AuthModalProps) {
             <div className="flex items-start justify-between mb-5">
               <div>
                 <h2 className="font-syne text-xl font-extrabold text-gray-900 dark:text-gray-50">
-                  Connect to ImpactBags
+                  Connect to ImpactAI
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">
                   Choose a wallet or sign in with a social account

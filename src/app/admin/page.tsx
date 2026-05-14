@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <span className="font-syne font-extrabold text-base">
             <span className="text-brand-gold">Impact</span>
-            <span className="text-brand-green">Bags</span>
+            <span className="text-brand-green">AI</span>
             <span className="text-xs text-gray-400 dark:text-gray-600 font-dm font-normal ml-2">Admin</span>
           </span>
           <ThemeToggle />

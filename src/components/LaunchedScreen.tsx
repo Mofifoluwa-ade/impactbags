@@ -199,13 +199,13 @@ export function LaunchedScreen({ token, onLaunchAnother, creatorDisplay, creator
                 <MessageCircle size={14} /> WhatsApp
               </a>
               <button
-                onClick={() => navigator.clipboard.writeText(`https://impactbags.vercel.app/token/${token.ticker}`)}
+                onClick={() => navigator.clipboard.writeText(`https://impactai.vercel.app/token/${token.ticker}`)}
                 className={cn("flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400 hover:border-brand-gold/50 hover:text-brand-gold transition-all")}
               >
                 <Link2 size={14} /> Copy link
               </button>
               <button
-                onClick={() => alert(`QR for impactbags.vercel.app/token/${token.ticker}`)}
+                onClick={() => alert(`QR for impactai.vercel.app/token/${token.ticker}`)}
                 className={cn("flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400 hover:border-brand-gold/50 hover:text-brand-gold transition-all")}
               >
                 <QrCode size={14} /> QR Code

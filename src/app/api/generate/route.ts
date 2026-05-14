@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { GenerateApiResponse, GeneratedToken } from "@/types";
 import { AI_GENERATE_PROMPT } from "@/lib/constants";
 
-// NO edge runtime — standard Node.js so Vercel can reach external APIs reliably
+// Standard Node.js runtime — required for outbound fetch to Gemini
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -28,51 +28,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY is not set");
+      console.error("GEMINI_API_KEY is not set");
       return NextResponse.json<GenerateApiResponse>(
-        { error: "ANTHROPIC_API_KEY not configured on server." },
+        { error: "GEMINI_API_KEY not configured on server." },
         { status: 500 }
       );
     }
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+    // Gemini 1.5 Flash — fast, free tier available, great for structured JSON output
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const geminiRes = await fetch(geminiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001", // fast + cheap — good for token generation
-        max_tokens: 800,
-        messages: [{ role: "user", content: AI_GENERATE_PROMPT(cause.trim()) }],
+        contents: [
+          {
+            parts: [{ text: AI_GENERATE_PROMPT(cause.trim()) }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 800,
+          responseMimeType: "application/json", // forces Gemini to return pure JSON
+        },
       }),
     });
 
-    // Log the actual error from Anthropic to help debug
-    if (!anthropicRes.ok) {
-      const errBody = await anthropicRes.text().catch(() => "");
-      console.error("Anthropic API error:", anthropicRes.status, errBody);
+    if (!geminiRes.ok) {
+      const errBody = await geminiRes.text().catch(() => "");
+      console.error("Gemini API error:", geminiRes.status, errBody);
       return NextResponse.json<GenerateApiResponse>(
-        { error: `AI service returned ${anthropicRes.status}. Check your API key and billing.` },
+        { error: `AI service returned ${geminiRes.status}. Check your Gemini API key.` },
         { status: 502 }
       );
     }
 
-    const data = await anthropicRes.json();
-    const rawText: string = data?.content?.[0]?.text ?? "";
+    const data = await geminiRes.json();
+
+    // Gemini response structure: candidates[0].content.parts[0].text
+    const rawText: string =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     if (!rawText) {
-      console.error("Empty response from Anthropic:", data);
+      console.error("Empty response from Gemini:", JSON.stringify(data));
       return NextResponse.json<GenerateApiResponse>(
         { error: "AI returned an empty response. Please try again." },
         { status: 502 }
       );
     }
 
-    // Strip markdown fences if model wraps in ```json
+    // Strip any markdown fences just in case
     const cleaned = rawText
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
@@ -82,8 +90,8 @@ export async function POST(req: NextRequest) {
     let parsed: GeneratedToken;
     try {
       parsed = JSON.parse(cleaned);
-    } catch (parseErr) {
-      console.error("Failed to parse AI JSON:", cleaned);
+    } catch {
+      console.error("Failed to parse Gemini JSON:", cleaned);
       return NextResponse.json<GenerateApiResponse>(
         { error: "AI response could not be parsed. Please try again." },
         { status: 502 }

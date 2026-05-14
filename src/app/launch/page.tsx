@@ -97,6 +97,7 @@ export default function LaunchPage() {
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg">
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onConnected={(u) => { setUser(u); setAuthOpen(false); if (screen === "preview" && token) setScreen("launched"); }} />
       <Navbar walletUser={user} onWalletChange={setUser} showLaunchBtn={false} />
+
       <main className="flex-1 w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Page header */}
         <div className="mb-8">
@@ -135,7 +136,7 @@ export default function LaunchPage() {
       {/* Footer */}
       <footer className="border-t border-light-border dark:border-dark-border py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-8xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="font-syne text-sm font-bold"><span className="text-brand-gold">Impact</span><span className="text-brand-green">Bags</span></span>
+          <span className="font-syne text-sm font-bold"><span className="text-brand-gold">Impact</span><span className="text-brand-green">AI</span></span>
           <span className="text-xs text-gray-400 dark:text-gray-600 font-mono">#BagsHackathon · Built on Solana</span>
         </div>
       </footer>

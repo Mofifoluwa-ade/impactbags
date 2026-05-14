@@ -60,7 +60,7 @@ function Navbar({ walletUser, onConnect, onWalletDisconnect }: {
           </div>
           <span className="font-syne text-lg font-extrabold">
             <span className="text-brand-gold">Impact</span>
-            <span className="text-brand-green">Bags</span>
+            <span className="text-brand-green">AI</span>
           </span>
         </Link>
 
@@ -147,7 +147,7 @@ function HeroSection({ onConnect, user }: { onConnect: () => void; user: Connect
           {/* Badge */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border text-xs text-gray-500 dark:text-gray-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-green" style={{ animation: "pulseDot 1.5s ease-in-out infinite" }} />
-            Built on Solana · Powered by Bags SDK · AI by Claude
+            Built on Solana · Powered by Bags SDK · AI by Gemini
           </motion.div>
 
           {/* Headline */}
@@ -357,7 +357,7 @@ function FeaturesSection() {
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-light-surface dark:bg-dark-surface border-y border-light-border dark:border-dark-border">
       <div className="max-w-8xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-block text-xs font-medium uppercase tracking-wider text-brand-gold mb-3 px-3 py-1 rounded-full bg-brand-gold/10 border border-brand-gold/20">Why ImpactBags</div>
+          <div className="inline-block text-xs font-medium uppercase tracking-wider text-brand-gold mb-3 px-3 py-1 rounded-full bg-brand-gold/10 border border-brand-gold/20">Why ImpactAI</div>
           <h2 className="font-syne text-4xl font-extrabold text-gray-900 dark:text-gray-50">Everything built in.</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -385,7 +385,7 @@ function CTASection({ onConnect, user }: { onConnect: () => void; user: Connecte
             Ready to fund your <span className="text-brand-gold">cause?</span>
           </h2>
           <p className="text-lg text-gray-500 dark:text-gray-500 mb-8">
-            Join thousands of communities using ImpactBags to turn crypto trading into real-world change.
+            Join thousands of communities using ImpactAI to turn crypto trading into real-world change.
           </p>
           {isConnected ? (
             <Link href="/launch" className="btn-gold px-10 py-5 text-lg inline-flex items-center gap-2">
@@ -409,11 +409,14 @@ function Footer() {
       <div className="max-w-8xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <span className="font-syne text-lg font-extrabold"><span className="text-brand-gold">Impact</span><span className="text-brand-green">Bags</span></span>
+           <span className="font-syne text-lg font-extrabold">
+             <span className="text-brand-gold">Impact</span>
+             <span className="text-brand-green">AI</span>
+            </span>
             <span className="text-xs text-gray-400 dark:text-gray-600">Community tokens. Real change.</span>
           </div>
           <div className="flex items-center gap-6 flex-wrap justify-center">
-            {[["https://dev.bags.fm", "Bags Docs"], ["https://solana.com", "Solana"], ["https://console.anthropic.com", "Claude API"]].map(([href, label]) => (
+            {[["https://dev.bags.fm", "Bags Docs"], ["https://solana.com", "Solana"], ["https://aistudio.google.com/app/apikey", "Gemini API"]].map(([href, label]) => (
               <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-600 hover:text-brand-gold transition-colors">
                 <ExternalLink size={10} />{label}
               </a>

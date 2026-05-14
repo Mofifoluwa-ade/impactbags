@@ -174,7 +174,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <span className="font-syne font-extrabold text-base">
               <span className="text-brand-gold">Impact</span>
-              <span className="text-brand-green">Bags</span>
+              <span className="text-brand-green">AI</span>
             </span>
             <span className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs bg-brand-gold/10 text-brand-gold border border-brand-gold/20 font-medium">
               Admin Dashboard

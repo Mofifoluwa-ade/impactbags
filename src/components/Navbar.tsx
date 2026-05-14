@@ -72,7 +72,7 @@ export function Navbar({ walletUser, onWalletChange, showLaunchBtn = false }: Na
             </div>
             <span className="font-syne text-lg font-extrabold">
               <span className="text-brand-gold">Impact</span>
-              <span className="text-brand-green">Bags</span>
+              <span className="text-brand-green">AI</span>
             </span>
           </Link>
 
