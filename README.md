@@ -126,7 +126,7 @@ src/
 | Animations | Framer Motion |
 | Icons | Lucide React |
 | Theming | next-themes |
-| AI | Google Gemini (gemini-2.0-flash) |
+| AI | Google Gemini (gemini-2.5-flash) |
 | Blockchain | Solana via Bags SDK |
 | Deploy | Vercel (free tier) |
 

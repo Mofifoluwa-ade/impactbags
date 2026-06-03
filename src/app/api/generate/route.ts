@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Gemini 2.0 Flash — fast, free tier available, great for structured JSON output
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Gemini 2.5 Flash — fast, free tier available, great for structured JSON output
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
