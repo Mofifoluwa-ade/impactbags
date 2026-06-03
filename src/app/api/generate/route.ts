@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import type { GenerateApiResponse, GeneratedToken } from "@/types";
 import { AI_GENERATE_PROMPT } from "@/lib/constants";
 
-// Standard Node.js runtime — required for outbound fetch to Gemini
+// Standard Node.js runtime — required for outbound fetch to the Claude API
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -28,70 +29,88 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      console.error("GEMINI_API_KEY is not set");
+      console.error("ANTHROPIC_API_KEY is not set");
       return NextResponse.json<GenerateApiResponse>(
-        { error: "GEMINI_API_KEY not configured on server." },
+        { error: "ANTHROPIC_API_KEY not configured on server." },
         { status: 500 }
       );
     }
 
-    // Gemini 1.5 Flash — fast, free tier available, great for structured JSON output
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const client = new Anthropic({ apiKey });
 
-    const geminiRes = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: AI_GENERATE_PROMPT(cause.trim()) }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 800,
-          responseMimeType: "application/json", // forces Gemini to return pure JSON
+    // Structured outputs guarantee the response matches this schema — no
+    // fragile markdown-fence stripping or hand-rolled JSON parsing needed.
+    const TOKEN_SCHEMA = {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        ticker: { type: "string" },
+        description: { type: "string" },
+        emoji: { type: "string" },
+        causeWallet: { type: "string" },
+        viralHook: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+      },
+      required: [
+        "name",
+        "ticker",
+        "description",
+        "emoji",
+        "causeWallet",
+        "viralHook",
+        "tags",
+      ],
+      additionalProperties: false,
+    } as const;
+
+    let response;
+    try {
+      response = await client.messages.create({
+        model: "claude-opus-4-8",
+        max_tokens: 1024,
+        // Fast, creative one-shot generation — no extended reasoning needed.
+        thinking: { type: "disabled" },
+        output_config: {
+          format: { type: "json_schema", schema: TOKEN_SCHEMA },
         },
-      }),
-    });
+        messages: [{ role: "user", content: AI_GENERATE_PROMPT(cause.trim()) }],
+      });
+    } catch (err) {
+      if (err instanceof Anthropic.APIError) {
+        console.error("Claude API error:", err.status, err.message);
+        return NextResponse.json<GenerateApiResponse>(
+          { error: `AI service returned ${err.status}. Check your Anthropic API key.` },
+          { status: 502 }
+        );
+      }
+      throw err;
+    }
 
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.text().catch(() => "");
-      console.error("Gemini API error:", geminiRes.status, errBody);
+    if (response.stop_reason === "refusal") {
+      console.error("Claude refused the request:", JSON.stringify(response.stop_details));
       return NextResponse.json<GenerateApiResponse>(
-        { error: `AI service returned ${geminiRes.status}. Check your Gemini API key.` },
+        { error: "AI declined to generate for this cause. Please rephrase and try again." },
         { status: 502 }
       );
     }
 
-    const data = await geminiRes.json();
-
-    // Gemini response structure: candidates[0].content.parts[0].text
-    const rawText: string =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const rawText = response.content.find((b) => b.type === "text")?.text ?? "";
 
     if (!rawText) {
-      console.error("Empty response from Gemini:", JSON.stringify(data));
+      console.error("Empty response from Claude:", JSON.stringify(response));
       return NextResponse.json<GenerateApiResponse>(
         { error: "AI returned an empty response. Please try again." },
         { status: 502 }
       );
     }
 
-    // Strip any markdown fences just in case
-    const cleaned = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
-
     let parsed: GeneratedToken;
     try {
-      parsed = JSON.parse(cleaned);
+      parsed = JSON.parse(rawText);
     } catch {
-      console.error("Failed to parse Gemini JSON:", cleaned);
+      console.error("Failed to parse Claude JSON:", rawText);
       return NextResponse.json<GenerateApiResponse>(
         { error: "AI response could not be parsed. Please try again." },
         { status: 502 }

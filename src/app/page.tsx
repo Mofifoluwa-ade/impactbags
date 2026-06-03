@@ -147,7 +147,7 @@ function HeroSection({ onConnect, user }: { onConnect: () => void; user: Connect
           {/* Badge */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border text-xs text-gray-500 dark:text-gray-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-green" style={{ animation: "pulseDot 1.5s ease-in-out infinite" }} />
-            Built on Solana · Powered by Bags SDK · AI by Gemini
+            Built on Solana · Powered by Bags SDK · AI by Claude
           </motion.div>
 
           {/* Headline */}
@@ -416,7 +416,7 @@ function Footer() {
             <span className="text-xs text-gray-400 dark:text-gray-600">Community tokens. Real change.</span>
           </div>
           <div className="flex items-center gap-6 flex-wrap justify-center">
-            {[["https://dev.bags.fm", "Bags Docs"], ["https://solana.com", "Solana"], ["https://aistudio.google.com/app/apikey", "Gemini API"]].map(([href, label]) => (
+            {[["https://dev.bags.fm", "Bags Docs"], ["https://solana.com", "Solana"], ["https://console.anthropic.com", "Claude API"]].map(([href, label]) => (
               <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-600 hover:text-brand-gold transition-colors">
                 <ExternalLink size={10} />{label}
               </a>
