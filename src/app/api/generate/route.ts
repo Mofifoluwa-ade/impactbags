@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     // Always hit the official Anthropic endpoint — deliberately ignore any
     // ANTHROPIC_BASE_URL in the environment so a gateway meant for other tools
     // can't intercept these requests.
-    const client = new Anthropic({ apiKey, baseURL: "https://cc.freemodel.dev" });
+    const client = new Anthropic({ apiKey, baseURL: "https://api.anthropic.com" });
 
     // Structured outputs guarantee the response matches this schema — no
     // fragile markdown-fence stripping or hand-rolled JSON parsing needed.
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     let response;
     try {
       response = await client.messages.create({
-        model: "claude-opus-4-8",
+        model: "claude-haiku-4-5",
         max_tokens: 1024,
         // Fast, creative one-shot generation — no extended reasoning needed.
         thinking: { type: "disabled" },

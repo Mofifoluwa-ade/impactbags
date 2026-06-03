@@ -126,7 +126,7 @@ src/
 | Animations | Framer Motion |
 | Icons | Lucide React |
 | Theming | next-themes |
-| AI | Anthropic Claude (claude-opus-4-8) |
+| AI | Anthropic Claude (claude-haiku-4-5) |
 | Blockchain | Solana via Bags SDK |
 | Deploy | Vercel (free tier) |
 
