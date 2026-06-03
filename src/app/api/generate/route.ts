@@ -87,9 +87,13 @@ export async function POST(req: NextRequest) {
       });
     } catch (err) {
       if (err instanceof Anthropic.APIError) {
-        console.error("Claude API error:", err.status, err.message);
+        // TEMP DEBUG: surface the exact upstream reason to the client.
+        const detail =
+          (err as { error?: { error?: { message?: string } } }).error?.error
+            ?.message || err.message;
+        console.error("Claude API error:", err.status, detail);
         return NextResponse.json<GenerateApiResponse>(
-          { error: `AI service returned ${err.status}. Check your Anthropic API key.` },
+          { error: `AI service returned ${err.status}: ${detail}` },
           { status: 502 }
         );
       }
