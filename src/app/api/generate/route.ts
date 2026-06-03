@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
           temperature: 0.9,
           maxOutputTokens: 800,
           responseMimeType: "application/json", // forces Gemini to return pure JSON
+          // Gemini 2.5 Flash "thinks" by default, and those tokens share the
+          // maxOutputTokens budget — leaving too few for the JSON and truncating
+          // it (→ parse errors). This is a simple naming task, so disable it.
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     });
