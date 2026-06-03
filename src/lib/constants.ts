@@ -44,7 +44,7 @@ export const STATS = [
 
 export const HOW_IT_WORKS = [
   { step: "01", title: "Describe your cause", desc: "Type one sentence about the community problem you want to solve. AI handles the rest." },
-  { step: "02", title: "AI builds your token", desc: "Claude generates a name, ticker, description, and viral share hook tailored to your cause." },
+  { step: "02", title: "AI builds your token", desc: "Gemini generates a name, ticker, description, and viral share hook tailored to your cause." },
   { step: "03", title: "Launch on Solana", desc: "One click deploys your token via the Bags SDK. No smart contract knowledge needed." },
   { step: "04", title: "Fees fund the cause", desc: "Every trade auto-splits fees: 40% to your cause wallet, 30% to holders, 20% to you." },
 ];

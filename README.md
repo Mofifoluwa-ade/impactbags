@@ -9,7 +9,7 @@ Built for the [Bags Hackathon](https://bags.fm) — targeting **AI Agents + Fee 
 ## What it does
 
 1. **Type your cause** — "Solar panels for my street in Port Harcourt"
-2. **AI generates** — Token name, ticker, description, viral hook (Claude API)
+2. **AI generates** — Token name, ticker, description, viral hook (Gemini API)
 3. **Launch on Bags** — One call to `bagsSDK.launchToken()` with auto fee splits
 4. **Fees auto-split** — 40% cause wallet · 30% holders · 20% creator · 10% platform
 5. **Share & go viral** — WhatsApp/X buttons with pre-written hooks
@@ -24,7 +24,7 @@ cd impactbags
 npm install
 
 cp .env.local.example .env.local
-# Add ANTHROPIC_API_KEY to .env.local
+# Add GEMINI_API_KEY to .env.local
 
 npm run dev
 # Open http://localhost:3000
@@ -35,7 +35,7 @@ npm run dev
 ## Environment variables
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...     # Required — console.anthropic.com
+GEMINI_API_KEY=...               # Required — aistudio.google.com/app/apikey
 BAGS_API_KEY=...                  # Required for production launch — dev.bags.fm
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
@@ -84,7 +84,7 @@ src/
 │   ├── page.tsx            # Main page — orchestrates all screens
 │   ├── globals.css         # Tailwind + custom CSS
 │   └── api/generate/
-│       └── route.ts        # Edge API route → Anthropic Claude
+│       └── route.ts        # API route → Google Gemini
 ├── components/
 │   ├── Navbar.tsx          # Header + theme toggle + wallet connect
 │   ├── Footer.tsx          # Footer links
@@ -126,7 +126,7 @@ src/
 | Animations | Framer Motion |
 | Icons | Lucide React |
 | Theming | next-themes |
-| AI | Anthropic Claude (claude-haiku-4-5) |
+| AI | Google Gemini (gemini-2.0-flash) |
 | Blockchain | Solana via Bags SDK |
 | Deploy | Vercel (free tier) |
 
@@ -136,7 +136,7 @@ src/
 
 ```bash
 npx vercel --prod
-# Set ANTHROPIC_API_KEY in Vercel dashboard → Settings → Environment Variables
+# Set GEMINI_API_KEY in Vercel dashboard → Settings → Environment Variables
 ```
 
 ---

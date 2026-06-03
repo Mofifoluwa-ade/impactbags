@@ -109,7 +109,7 @@ export default function LaunchPage() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
             {screen === "home" && "Describe your cause, AI builds the token, Bags deploys it on Solana."}
-            {screen === "generating" && "Claude AI is crafting your token identity."}
+            {screen === "generating" && "Gemini AI is crafting your token identity."}
             {screen === "preview" && "Review everything before it goes live on-chain."}
             {screen === "launched" && "Share it and watch the community fund your cause."}
           </p>

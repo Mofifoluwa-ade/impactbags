@@ -295,7 +295,7 @@ export default function DocsPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             {[
-              { icon: "🤖", title: "Claude AI", desc: "Generates token name, ticker, description and viral hook from a one-sentence cause description." },
+              { icon: "🤖", title: "Gemini AI", desc: "Generates token name, ticker, description and viral hook from a one-sentence cause description." },
               { icon: "⚡", title: "Bags SDK", desc: "Deploys the token on Solana and configures automatic fee splits on every trade." },
               { icon: "🔐", title: "NextAuth + Wallets", desc: "Authenticates users via Phantom, Solflare, Backpack, Google, or GitHub." },
             ].map((f, i) => (
@@ -314,9 +314,9 @@ cd impactai
 npm install`} />
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">Copy the example environment file:</p>
           <CodeBlock language="bash" code={`cp .env.local.example .env.local`} />
-          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">Add your Anthropic API key (minimum required to run locally):</p>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">Add your Gemini API key (minimum required to run locally):</p>
           <CodeBlock language="bash" code={`# .env.local
-ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=your-gemini-key
 NEXTAUTH_SECRET=any-random-string-for-local-dev
 NEXTAUTH_URL=http://localhost:3000`} />
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">Start the development server:</p>
@@ -341,7 +341,7 @@ NEXTAUTH_URL=http://localhost:3000`} />
               </thead>
               <tbody className="divide-y divide-light-border dark:divide-dark-border">
                 {[
-                  ["ANTHROPIC_API_KEY", "✅ Yes",   "Claude API key — get at console.anthropic.com"],
+                  ["GEMINI_API_KEY",    "✅ Yes",   "Gemini API key — get at aistudio.google.com/app/apikey"],
                   ["NEXTAUTH_SECRET",       "✅ Yes",   "Random secret for signing JWT sessions"],
                   ["NEXTAUTH_URL",          "✅ Yes",   "Full URL of your app (http://localhost:3000 locally)"],
                   ["GOOGLE_CLIENT_ID",      "Optional", "Google OAuth app client ID"],
@@ -366,7 +366,7 @@ NEXTAUTH_URL=http://localhost:3000`} />
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── auth/[...nextauth]/route.ts   # NextAuth handler
-│   │   │   └── generate/route.ts             # Claude AI generation
+│   │   │   └── generate/route.ts             # Gemini AI generation
 │   │   ├── docs/page.tsx                     # This page
 │   │   ├── launch/page.tsx                   # Token creation app
 │   │   ├── layout.tsx                        # Root layout + providers
@@ -405,7 +405,7 @@ NEXTAUTH_URL=http://localhost:3000`} />
           </p>
           {[
             { n: "01", title: "User describes their cause", body: "A single text input on the launch page. The user types one sentence describing the community problem they want to solve — e.g. \"Solar panels for 200 homes in rural Ethiopia\". Example prompts are provided to lower the barrier." },
-            { n: "02", title: "AI generates the token identity", body: "The cause text is sent to the Claude API via a Next.js route. Claude returns a JSON object containing a token name, ticker (4–6 capital letters), description, relevant emoji, cause wallet label, and a pre-written viral share hook." },
+            { n: "02", title: "AI generates the token identity", body: "The cause text is sent to the Gemini API via a Next.js route. Gemini returns a JSON object containing a token name, ticker (4–6 capital letters), description, relevant emoji, cause wallet label, and a pre-written viral share hook." },
             { n: "03", title: "User reviews and launches", body: "The generated token is shown in a preview screen. The user can regenerate, edit their cause, or click Launch. In production this calls bagsSDK.launchToken() which deploys the token on Solana and registers the fee split configuration." },
             { n: "04", title: "Fees flow to the cause", body: "Every on-chain trade of the token triggers the fee split: 40% goes to a designated cause wallet, 30% is redistributed to all token holders as cashback, 20% goes to the creator, and 10% to the platform. No manual distribution needed." },
           ].map((s) => (
@@ -555,7 +555,7 @@ console.log("Token live:", result.mintAddress);`} />
 
           <H2 id="api-generate">POST /api/generate</H2>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
-            Route that calls the Claude API and returns a structured token object.
+            Route that calls the Gemini API and returns a structured token object.
           </p>
           <H3 id="generate-request">Request</H3>
           <CodeBlock language="json" code={`POST /api/generate
@@ -589,8 +589,8 @@ Content-Type: application/json
                 {[
                   ["400", "Cause text missing or under 5 characters"],
                   ["400", "Cause text over 300 characters"],
-                  ["500", "ANTHROPIC_API_KEY not set in environment"],
-                  ["502", "Claude API returned a non-200 response"],
+                  ["500", "GEMINI_API_KEY not set in environment"],
+                  ["502", "Gemini API returned a non-200 response"],
                   ["500", "AI response could not be parsed as valid JSON"],
                 ].map(([s, r]) => (
                   <tr key={r} className="bg-light-surface dark:bg-dark-surface">
@@ -625,7 +625,7 @@ npm i -g vercel
 vercel
 
 # Set environment variables
-vercel env add ANTHROPIC_API_KEY
+vercel env add GEMINI_API_KEY
 vercel env add NEXTAUTH_SECRET
 vercel env add NEXTAUTH_URL          # https://your-app.vercel.app
 vercel env add GOOGLE_CLIENT_ID
@@ -709,7 +709,7 @@ vercel --prod`} />
               <div className="flex items-center gap-4 flex-wrap">
                 {[
                   ["https://dev.bags.fm", "Bags Docs"],
-                  ["https://console.anthropic.com", "Claude API"],
+                  ["https://aistudio.google.com/app/apikey", "Gemini API"],
                   ["https://next-auth.js.org", "NextAuth"],
                   ["https://solana.com", "Solana"],
                 ].map(([href, label]) => (
