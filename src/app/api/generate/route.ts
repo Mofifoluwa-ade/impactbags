@@ -29,16 +29,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // Use a project-specific key var (IMPACTBAGS_ANTHROPIC_KEY) so it never
+    // collides with a global ANTHROPIC_API_KEY/ANTHROPIC_BASE_URL that may be
+    // set in the shell for other tooling (e.g. Claude Code). Fall back to the
+    // standard ANTHROPIC_API_KEY for deploy environments where there's no clash.
+    const apiKey =
+      process.env.IMPACTBAGS_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY is not set");
+      console.error("IMPACTBAGS_ANTHROPIC_KEY / ANTHROPIC_API_KEY is not set");
       return NextResponse.json<GenerateApiResponse>(
-        { error: "ANTHROPIC_API_KEY not configured on server." },
+        { error: "Anthropic API key not configured on server." },
         { status: 500 }
       );
     }
 
-    const client = new Anthropic({ apiKey });
+    // Always hit the official Anthropic endpoint — deliberately ignore any
+    // ANTHROPIC_BASE_URL in the environment so a gateway meant for other tools
+    // can't intercept these requests.
+    const client = new Anthropic({ apiKey, baseURL: "https://cc.freemodel.dev" });
 
     // Structured outputs guarantee the response matches this schema — no
     // fragile markdown-fence stripping or hand-rolled JSON parsing needed.
