@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ token }, { status: 201 });
   } catch (err) {
     console.error("POST /api/tokens error:", err);
-    return NextResponse.json({ error: "Failed to save token" }, { status: 500 });
+    // TEMP DEBUG: surface the underlying reason so storage misconfig is visible.
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: "Failed to save token", detail }, { status: 500 });
   }
 }

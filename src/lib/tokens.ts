@@ -1,10 +1,26 @@
 import { Redis } from "@upstash/redis";
 import type { LiveToken, PlatformStats } from "@/types/token";
 
-const redis = new Redis({
-  url: process.env.STORAGE_URL!,
-  token: process.env.STORAGE_TOKEN!,
-});
+// Accept whichever names the storage provider/Vercel integration set. The
+// Vercel Upstash/KV integration commonly uses KV_REST_API_* or
+// UPSTASH_REDIS_REST_* rather than the STORAGE_* names this project expects.
+const redisUrl =
+  process.env.STORAGE_URL ||
+  process.env.KV_REST_API_URL ||
+  process.env.UPSTASH_REDIS_REST_URL;
+const redisToken =
+  process.env.STORAGE_TOKEN ||
+  process.env.KV_REST_API_TOKEN ||
+  process.env.UPSTASH_REDIS_REST_TOKEN;
+
+if (!redisUrl || !redisToken) {
+  console.error(
+    "[tokens] Redis is not configured. Set STORAGE_URL/STORAGE_TOKEN " +
+      "(or KV_REST_API_URL/KV_REST_API_TOKEN, or UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN)."
+  );
+}
+
+const redis = new Redis({ url: redisUrl!, token: redisToken! });
 
 const TOKENS_KEY   = "impactai:tokens";      // sorted set: score=createdAt ts, member=id
 const TOKEN_PREFIX = "impactai:token:";       // hash per token
