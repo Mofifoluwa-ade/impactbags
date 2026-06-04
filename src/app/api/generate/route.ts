@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { GenerateApiResponse, GeneratedToken } from "@/types";
 import { AI_GENERATE_PROMPT } from "@/lib/constants";
+import { rateLimit } from "@/lib/ratelimit";
 
 // Standard Node.js runtime — required for outbound fetch to Gemini
 export async function POST(req: NextRequest) {
@@ -15,16 +16,37 @@ export async function POST(req: NextRequest) {
 
     const { cause } = body as { cause: string };
 
-    if (!cause || cause.trim().length < 5) {
+    // Sanitize before the value reaches the AI prompt: strip control characters
+    // and collapse runs of whitespace.
+    const cleanCause = (cause ?? "")
+      .replace(/[\x00-\x1F\x7F]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (cleanCause.length < 5) {
       return NextResponse.json<GenerateApiResponse>(
         { error: "Please describe your cause in at least a few words." },
         { status: 400 }
       );
     }
-    if (cause.trim().length > 300) {
+    if (cleanCause.length > 300) {
       return NextResponse.json<GenerateApiResponse>(
         { error: "Keep it under 300 characters." },
         { status: 400 }
+      );
+    }
+
+    // Rate limit by client IP to protect the AI endpoint from abuse and runaway
+    // cost. Fails open when Redis isn't configured (e.g. local dev).
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "anon";
+    const rl = await rateLimit(`generate:${ip}`, { limit: 10, windowSec: 60 });
+    if (!rl.ok) {
+      return NextResponse.json<GenerateApiResponse>(
+        { error: `Too many requests. Please wait ${rl.retryAfter || 60}s and try again.` },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter || 60) } }
       );
     }
 
@@ -46,7 +68,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         contents: [
           {
-            parts: [{ text: AI_GENERATE_PROMPT(cause.trim()) }],
+            parts: [{ text: AI_GENERATE_PROMPT(cleanCause) }],
           },
         ],
         generationConfig: {
