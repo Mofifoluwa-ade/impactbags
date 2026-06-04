@@ -1,4 +1,4 @@
-# ImpactBags — Community Tokens, Real Change
+# Impact Ai— Community Tokens, Real Change
 
 Turn any Nigerian community cause into a Solana token in 60 seconds. AI names it, Bags SDK launches it, fees fund the cause automatically.
 
@@ -20,7 +20,7 @@ Built for the [Bags Hackathon](https://bags.fm) — targeting **AI Agents + Fee 
 
 ```bash
 git clone <this-repo>
-cd impactbags
+cd impactai
 npm install
 
 cp .env.local.example .env.local
@@ -63,7 +63,7 @@ const result = await sdk.launchToken({
     cause: "0.40",      // → community wallet
     holders: "0.30",    // → token holders cashback
     creator: "0.20",    // → launcher
-    platform: "0.10",   // → ImpactBags
+    platform: "0.10",   // → Impact Ai
   },
   causeWallet: "SOLANA_WALLET_ADDRESS_FOR_CAUSE",
   metadata: {
