@@ -8,8 +8,9 @@ import { GeneratingScreen } from "@/components/GeneratingScreen";
 import { PreviewScreen } from "@/components/PreviewScreen";
 import { LaunchedScreen } from "@/components/LaunchedScreen";
 import { AuthModal } from "@/components/AuthModal";
-import type { AppScreen, GeneratedToken, ConnectedUser } from "@/types";
+import type { AppScreen, GeneratedToken } from "@/types";
 import { cn } from "@/lib/utils";
+import { useConnectedUser, creatorIdOf } from "@/lib/useConnectedUser";
 
 const STEPS: { id: AppScreen; label: string }[] = [
   { id: "home", label: "Describe" },
@@ -56,7 +57,7 @@ export default function LaunchPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastCause, setLastCause] = useState("");
-  const [user, setUser] = useState<ConnectedUser | null>(null);
+  const { user, walletUser, setWalletUser } = useConnectedUser();
   const [authOpen, setAuthOpen] = useState(false);
 
   const handleGenerate = useCallback(async (cause: string) => {
@@ -86,6 +87,7 @@ export default function LaunchPage() {
   const handleLaunch = useCallback(() => {
     if (!user) { setAuthOpen(true); return; }
     // Production: await bagsSDK.launchToken({ ...token, feeShares: { cause: "0.40", holders: "0.30", creator: "0.20", platform: "0.10" } })
+    // LaunchedScreen persists the token (with creator identity) and polls its live stats.
     setScreen("launched");
   }, [user]);
 
@@ -95,8 +97,8 @@ export default function LaunchPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg">
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onConnected={(u) => { setUser(u); setAuthOpen(false); if (screen === "preview" && token) setScreen("launched"); }} />
-      <Navbar walletUser={user} onWalletChange={setUser} showLaunchBtn={false} />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onConnected={(u) => { setWalletUser(u); setAuthOpen(false); if (screen === "preview" && token) setScreen("launched"); }} />
+      <Navbar walletUser={walletUser} onWalletChange={setWalletUser} showLaunchBtn={false} />
 
       <main className="flex-1 w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Page header */}
@@ -128,7 +130,14 @@ export default function LaunchPage() {
             <PreviewScreen key="preview" token={token} onLaunch={handleLaunch} onBack={goHome} onRegenerate={() => handleGenerate(lastCause)} />
           )}
           {screen === "launched" && token && (
-            <LaunchedScreen key="launched" token={token} onLaunchAnother={goHome} />
+            <LaunchedScreen
+              key="launched"
+              token={token}
+              onLaunchAnother={goHome}
+              creatorId={creatorIdOf(user)}
+              creatorWallet={user?.address}
+              creatorDisplay={user?.displayName}
+            />
           )}
         </AnimatePresence>
       </main>

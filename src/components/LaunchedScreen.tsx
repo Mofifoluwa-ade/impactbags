@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Share2, MessageCircle, Link2, QrCode, Camera, PlusCircle, CheckCircle2, TrendingUp, Loader2 } from "lucide-react";
+import { Share2, MessageCircle, Link2, QrCode, Camera, PlusCircle, CheckCircle2, TrendingUp, Loader2, LayoutGrid } from "lucide-react";
 import { useAnimatedCounter } from "@/lib/useAnimatedCounter";
 import type { GeneratedToken } from "@/types";
 import type { LiveToken } from "@/types/token";
@@ -11,12 +12,13 @@ import { buildShareX, buildShareWhatsApp, cn } from "@/lib/utils";
 interface LaunchedScreenProps {
   token: GeneratedToken;
   onLaunchAnother: () => void;
+  creatorId?: string;
   creatorDisplay?: string;
   creatorWallet?: string;
   country?: string;
 }
 
-export function LaunchedScreen({ token, onLaunchAnother, creatorDisplay, creatorWallet, country }: LaunchedScreenProps) {
+export function LaunchedScreen({ token, onLaunchAnother, creatorId, creatorDisplay, creatorWallet, country }: LaunchedScreenProps) {
   const [liveToken, setLiveToken] = useState<LiveToken | null>(null);
   const [saving, setSaving]       = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -38,6 +40,7 @@ export function LaunchedScreen({ token, onLaunchAnother, creatorDisplay, creator
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...token,
+            creatorId,
             creatorDisplay: creatorDisplay ?? "Anonymous",
             creatorWallet,
             country,
@@ -213,12 +216,20 @@ export function LaunchedScreen({ token, onLaunchAnother, creatorDisplay, creator
             </div>
           </div>
 
-          <button
-            onClick={onLaunchAnother}
-            className="btn-outline w-full py-3.5 text-sm flex items-center justify-center gap-2"
-          >
-            <PlusCircle size={16} /> Launch another cause
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Link
+              href="/portfolio"
+              className="btn-gold w-full py-3.5 text-sm flex items-center justify-center gap-2"
+            >
+              <LayoutGrid size={16} /> View my tokens
+            </Link>
+            <button
+              onClick={onLaunchAnother}
+              className="btn-outline w-full py-3.5 text-sm flex items-center justify-center gap-2"
+            >
+              <PlusCircle size={16} /> Launch another cause
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

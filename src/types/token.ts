@@ -16,6 +16,7 @@ export interface LiveToken {
   change24h: number;       // % price change 24h
   txCount: number;         // total on-chain transactions
   // metadata
+  creatorId?: string;      // stable creator identity (wallet:addr / user:name) for filtering
   creatorWallet?: string;
   creatorDisplay?: string; // name or short address
   createdAt: string;       // ISO string

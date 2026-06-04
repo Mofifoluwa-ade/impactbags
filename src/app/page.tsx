@@ -10,6 +10,7 @@ import { TickerBar } from "@/components/TickerBar";
 import { HOW_IT_WORKS, CATEGORIES } from "@/lib/constants";
 import type { LiveToken, PlatformStats } from "@/types/token";
 import { cn } from "@/lib/utils";
+import { useConnectedUser } from "@/lib/useConnectedUser";
 import type { ConnectedUser } from "@/types";
 import {
   Wallet, ArrowRight, Zap, Globe, Shield, TrendingUp,
@@ -102,6 +103,9 @@ function Navbar({ walletUser, onConnect, onWalletDisconnect }: {
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropOpen(false)} />
                   <div className={cn("absolute right-0 mt-2 w-44 rounded-2xl py-1.5 z-20 shadow-xl", "bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border")}>
+                    <Link href="/portfolio" onClick={() => setDropOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-surface2 dark:hover:bg-dark-surface2 transition-colors">
+                      <User size={14} /> My portfolio
+                    </Link>
                     <Link href="/launch" onClick={() => setDropOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-surface2 dark:hover:bg-dark-surface2 transition-colors">
                       ✦ Launch a token
                     </Link>
@@ -431,11 +435,10 @@ function Footer() {
 
 export default function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
-  const [walletUser, setWalletUser] = useState<ConnectedUser | null>(null);
-  const { data: session } = useSession();
-
-  // Either wallet connected or OAuth session = "logged in" for local UI purposes
-  const user = walletUser ?? (session?.user ? { method: "google" as const, displayName: session.user.name ?? session.user.email ?? "User" } : null);
+  // Unified identity: wallet (persisted to localStorage) + NextAuth session.
+  // Persisting here means a wallet connected on the landing page is still
+  // recognized on /portfolio.
+  const { user, walletUser, setWalletUser } = useConnectedUser();
 
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg">

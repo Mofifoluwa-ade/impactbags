@@ -80,6 +80,9 @@ export function Navbar({ walletUser, onWalletChange, showLaunchBtn = false }: Na
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/#how-it-works" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">How it works</Link>
             <Link href="/#launches"     className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Launches</Link>
+            {isConnected && (
+              <Link href="/portfolio" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Portfolio</Link>
+            )}
             <a href="https://dev.bags.fm" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
               Docs <ExternalLink size={11} />
             </a>
@@ -148,6 +151,9 @@ export function Navbar({ walletUser, onWalletChange, showLaunchBtn = false }: Na
                           <div className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 truncate">{oauthUser.email}</div>
                         </div>
                       )}
+                      <Link href="/portfolio" onClick={() => setDropOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-surface2 dark:hover:bg-dark-surface2 transition-colors">
+                        <User size={14} /> My portfolio
+                      </Link>
                       <Link href="/launch" onClick={() => setDropOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-surface2 dark:hover:bg-dark-surface2 transition-colors">
                         ✦ Launch a token
                       </Link>

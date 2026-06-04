@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
       volume24h:      0,
       change24h:      0,
       txCount:        0,
+      creatorId:      body.creatorId,
       creatorWallet:  body.creatorWallet,
       creatorDisplay: body.creatorDisplay,
       proofPhotos:    [],
