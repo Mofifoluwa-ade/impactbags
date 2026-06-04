@@ -14,7 +14,7 @@ import { useConnectedUser } from "@/lib/useConnectedUser";
 import type { ConnectedUser } from "@/types";
 import {
   Wallet, ArrowRight, Zap, Globe, Shield, TrendingUp,
-  ExternalLink, ChevronRight, Star, Users, Activity, LogOut, User,
+  ExternalLink, ChevronRight, Star, Users, Activity, LogOut, User, LayoutGrid,
 } from "lucide-react";
 
 function Navbar({ walletUser, onConnect, onWalletDisconnect }: {
@@ -83,7 +83,15 @@ function Navbar({ walletUser, onConnect, onWalletDisconnect }: {
           {isLoading ? (
             <div className="h-8 w-20 rounded-xl bg-light-surface2 dark:bg-dark-surface2 animate-pulse" />
           ) : isConnected ? (
-            <div className="relative">
+            <>
+              <Link
+                href="/portfolio"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-brand-gold/10 border border-brand-gold/30 text-brand-gold hover:bg-brand-gold/20 transition-all"
+              >
+                <LayoutGrid size={14} />
+                <span className="hidden sm:inline">Portfolio</span>
+              </Link>
+              <div className="relative">
               <button
                 onClick={() => setDropOpen(p => !p)}
                 className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm", "bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border", "text-gray-700 dark:text-gray-300 hover:border-brand-gold/40 transition-all")}
@@ -115,7 +123,8 @@ function Navbar({ walletUser, onConnect, onWalletDisconnect }: {
                   </div>
                 </>
               )}
-            </div>
+              </div>
+            </>
           ) : (
             <div className="flex items-center gap-2">
               <button onClick={onConnect} className="hidden sm:block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors px-3 py-2">
