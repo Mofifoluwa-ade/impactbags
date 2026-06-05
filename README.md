@@ -13,6 +13,7 @@ Built for the [Bags Hackathon](https://bags.fm) — targeting **AI Agents + Fee 
 3. **Launch on Bags** — One call to `bagsSDK.launchToken()` with auto fee splits
 4. **Fees auto-split** — 40% cause wallet · 30% holders · 20% creator · 10% platform
 5. **Share & go viral** — WhatsApp/X buttons with pre-written hooks
+6. **Track your launches** — Every launch is saved (Upstash Redis) and shown live on the home feed and the creator's `/portfolio`
 
 ---
 
@@ -24,11 +25,14 @@ cd impactai
 npm install
 
 cp .env.local.example .env.local
-# Add GEMINI_API_KEY to .env.local
+# Add GEMINI_API_KEY (required) and, for token persistence,
+# KV_REST_API_URL + KV_REST_API_TOKEN (Upstash / Vercel KV)
 
 npm run dev
 # Open http://localhost:3000
 ```
+
+> The app runs without storage configured — token persistence and rate limiting just no-op until you add an Upstash/KV store.
 
 ---
 
@@ -36,7 +40,21 @@ npm run dev
 
 ```
 GEMINI_API_KEY=...               # Required — aistudio.google.com/app/apikey
-BAGS_API_KEY=...                  # Required for production launch — dev.bags.fm
+NEXTAUTH_SECRET=...              # Required — openssl rand -base64 32
+NEXTAUTH_URL=http://localhost:3000
+
+# Storage — Upstash Redis / Vercel KV (token persistence + rate limiting).
+# STORAGE_URL/STORAGE_TOKEN and UPSTASH_REDIS_REST_* are also accepted.
+KV_REST_API_URL=...
+KV_REST_API_TOKEN=...
+
+# Optional — social login (NextAuth)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+
+BAGS_API_KEY=...                  # Optional — production token launch (dev.bags.fm)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -80,15 +98,21 @@ const result = await sdk.launchToken({
 ```
 src/
 ├── app/
-│   ├── layout.tsx          # Root layout + fonts + ThemeProvider
-│   ├── page.tsx            # Main page — orchestrates all screens
+│   ├── layout.tsx          # Root layout + fonts + providers
+│   ├── page.tsx            # Landing page
+│   ├── launch/page.tsx     # Token creation flow (describe → preview → launch)
+│   ├── portfolio/page.tsx  # Creator's launched tokens + stats
+│   ├── docs/page.tsx       # In-app documentation
 │   ├── globals.css         # Tailwind + custom CSS
-│   └── api/generate/
-│       └── route.ts        # API route → Google Gemini
+│   └── api/
+│       ├── generate/route.ts   # Gemini AI generation (sanitized + rate-limited)
+│       ├── tokens/route.ts     # GET list / POST save tokens
+│       ├── tokens/[id]/route.ts# GET / PATCH a single token
+│       ├── tokens/stats/route.ts # Aggregate platform stats
+│       └── auth/[...nextauth]/route.ts # NextAuth handler
 ├── components/
 │   ├── Navbar.tsx          # Header + theme toggle + wallet connect
-│   ├── Footer.tsx          # Footer links
-│   ├── ThemeProvider.tsx   # next-themes wrapper
+│   ├── AuthModal.tsx       # Wallet + OAuth sign-in modal
 │   ├── ThemeToggle.tsx     # Light / Dark / System switcher
 │   ├── TickerBar.tsx       # Live launches scrolling ticker
 │   ├── LiveLaunchesList.tsx # Home screen live launches list
@@ -96,13 +120,17 @@ src/
 │   ├── HomeScreen.tsx      # Step 1: cause input
 │   ├── GeneratingScreen.tsx # Loading animation
 │   ├── PreviewScreen.tsx   # Step 2: review token
-│   └── LaunchedScreen.tsx  # Step 3: live dashboard
+│   └── LaunchedScreen.tsx  # Step 3: live dashboard (saves token)
 ├── lib/
 │   ├── constants.ts        # Fee splits, example causes, AI prompt
+│   ├── tokens.ts           # Upstash Redis token store + stats
+│   ├── ratelimit.ts        # Upstash rate limiter (fail-open)
+│   ├── useConnectedUser.ts # Unified wallet + OAuth identity (creatorIdOf)
 │   ├── utils.ts            # cn(), formatCurrency(), share URLs
 │   └── useAnimatedCounter.ts # Animated number hook
 └── types/
-    └── index.ts            # TypeScript types
+    ├── index.ts            # App + UI types
+    └── token.ts            # LiveToken & PlatformStats
 ```
 
 ---
@@ -136,8 +164,11 @@ src/
 
 ```bash
 npx vercel --prod
-# Set GEMINI_API_KEY in Vercel dashboard → Settings → Environment Variables
+# In Vercel → Settings → Environment Variables, set GEMINI_API_KEY, NEXTAUTH_SECRET,
+# NEXTAUTH_URL, and connect an Upstash/KV store (injects KV_REST_API_URL/TOKEN).
 ```
+
+> ⚠️ Vercel does **not** auto-redeploy when you change env vars — trigger a fresh deployment so new values (e.g. storage) take effect.
 
 ---
 

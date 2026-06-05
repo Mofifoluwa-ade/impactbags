@@ -110,6 +110,8 @@ const NAV_SECTIONS = [
       { id: "how-it-works",  label: "How it works" },
       { id: "fee-splits",    label: "Fee splits" },
       { id: "token-launch",  label: "Token launch flow" },
+      { id: "token-storage", label: "Token storage" },
+      { id: "portfolio",     label: "Portfolio" },
     ],
   },
   {
@@ -126,6 +128,7 @@ const NAV_SECTIONS = [
     icon: Code2,
     items: [
       { id: "api-generate",  label: "POST /api/generate" },
+      { id: "api-tokens",    label: "Tokens API" },
       { id: "api-auth",      label: "NextAuth routes" },
     ],
   },
@@ -341,9 +344,11 @@ NEXTAUTH_URL=http://localhost:3000`} />
               </thead>
               <tbody className="divide-y divide-light-border dark:divide-dark-border">
                 {[
-                  ["GEMINI_API_KEY",    "✅ Yes",   "Gemini API key — get at aistudio.google.com/app/apikey"],
+                  ["GEMINI_API_KEY",        "✅ Yes",   "Gemini API key — get at aistudio.google.com/app/apikey"],
                   ["NEXTAUTH_SECRET",       "✅ Yes",   "Random secret for signing JWT sessions"],
                   ["NEXTAUTH_URL",          "✅ Yes",   "Full URL of your app (http://localhost:3000 locally)"],
+                  ["KV_REST_API_URL",       "✅ Yes",   "Upstash Redis REST URL — stores launched tokens & rate limits"],
+                  ["KV_REST_API_TOKEN",     "✅ Yes",   "Upstash Redis REST token (auth for the above)"],
                   ["GOOGLE_CLIENT_ID",      "Optional", "Google OAuth app client ID"],
                   ["GOOGLE_CLIENT_SECRET",  "Optional", "Google OAuth app client secret"],
                   ["GITHUB_CLIENT_ID",      "Optional", "GitHub OAuth app client ID"],
@@ -359,6 +364,9 @@ NEXTAUTH_URL=http://localhost:3000`} />
               </tbody>
             </table>
           </div>
+          <Callout type="tip">
+            The Vercel Upstash/KV integration provisions <Code>KV_REST_API_URL</Code> / <Code>KV_REST_API_TOKEN</Code> automatically. The app also accepts <Code>STORAGE_URL</Code> / <Code>STORAGE_TOKEN</Code> or <Code>UPSTASH_REDIS_REST_URL</Code> / <Code>UPSTASH_REDIS_REST_TOKEN</Code> — whichever is present. Without storage configured, the app still runs: token persistence and rate limiting simply no-op (fail open).
+          </Callout>
 
           <H2 id="project-structure">Project structure</H2>
           <CodeBlock language="text" code={`impactai/
@@ -366,9 +374,14 @@ NEXTAUTH_URL=http://localhost:3000`} />
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── auth/[...nextauth]/route.ts   # NextAuth handler
-│   │   │   └── generate/route.ts             # Gemini AI generation
+│   │   │   ├── generate/route.ts             # Gemini AI generation (rate-limited)
+│   │   │   └── tokens/
+│   │   │       ├── route.ts                  # GET list / POST save tokens
+│   │   │       ├── [id]/route.ts             # GET / PATCH a single token
+│   │   │       └── stats/route.ts            # Aggregate platform stats
 │   │   ├── docs/page.tsx                     # This page
 │   │   ├── launch/page.tsx                   # Token creation app
+│   │   ├── portfolio/page.tsx               # Creator's launched tokens
 │   │   ├── layout.tsx                        # Root layout + providers
 │   │   ├── page.tsx                          # Landing page
 │   │   └── globals.css
@@ -378,7 +391,8 @@ NEXTAUTH_URL=http://localhost:3000`} />
 │   │   ├── FeeSplitVisual.tsx                # Interactive fee bars
 │   │   ├── GeneratingScreen.tsx              # AI loading animation
 │   │   ├── HomeScreen.tsx                    # Cause input screen
-│   │   ├── LaunchedScreen.tsx                # Post-launch dashboard
+│   │   ├── LaunchedScreen.tsx                # Post-launch dashboard (saves token)
+│   │   ├── LiveLaunchesList.tsx              # Live launches list
 │   │   ├── Navbar.tsx                        # Header with auth state
 │   │   ├── PreviewScreen.tsx                 # Token review screen
 │   │   ├── ThemeProvider.tsx                 # next-themes wrapper
@@ -386,10 +400,14 @@ NEXTAUTH_URL=http://localhost:3000`} />
 │   │   └── TickerBar.tsx                     # Live launches ticker
 │   ├── lib/
 │   │   ├── constants.ts                      # Static data & AI prompt
-│   │   ├── mock-data.ts                      # Launches, examples, fee splits
+│   │   ├── tokens.ts                         # Redis token store + stats
+│   │   ├── ratelimit.ts                      # Upstash rate limiter (fail-open)
+│   │   ├── useConnectedUser.ts               # Unified wallet + OAuth identity
 │   │   ├── useAnimatedCounter.ts             # Animated number hook
 │   │   └── utils.ts                          # cn(), formatCurrency(), etc.
-│   └── types/index.ts                        # All TypeScript types
+│   └── types/
+│       ├── index.ts                          # App + UI types
+│       └── token.ts                          # LiveToken & PlatformStats
 ├── .env.local.example
 ├── next.config.js
 ├── tailwind.config.ts
@@ -470,6 +488,30 @@ const result = await sdk.launchToken({
 
 console.log("Token live:", result.mintAddress);`} />
 
+          <H2 id="token-storage">Token storage</H2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+            Launched tokens are persisted to <a href="https://upstash.com" target="_blank" rel="noopener noreferrer" className="text-brand-gold hover:underline">Upstash Redis</a> via <Code>src/lib/tokens.ts</Code>. Each token is stored as a JSON value keyed by id, plus a sorted set (scored by creation time) so lists come back newest-first.
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+            <li><Code>LaunchedScreen</Code> saves the token once on mount via <Code>POST /api/tokens</Code>, then polls <Code>GET /api/tokens/[id]</Code> every 20s for live stats.</li>
+            <li><Code>TickerBar</Code> and <Code>LiveLaunchesList</Code> read <Code>GET /api/tokens</Code> to render the home page launches.</li>
+            <li>Stats start at zero — a mock launch has no on-chain volume until real Bags trades exist.</li>
+          </ul>
+          <Callout type="info">
+            If Redis isn&apos;t configured, saves fail gracefully and the live lists simply stay empty — the rest of the app keeps working.
+          </Callout>
+
+          <H2 id="portfolio">Portfolio</H2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+            <Code>/portfolio</Code> shows the tokens launched by the connected user, with aggregate summary cards (tokens, total raised, supporters, on-chain txns) and a card per token. It polls <Code>GET /api/tokens</Code> every 15s and filters client-side by creator identity.
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
+            Attribution uses a stable <Code>creatorId</Code> derived by <Code>creatorIdOf()</Code> in <Code>src/lib/useConnectedUser.ts</Code>: wallet users key off their address (<Code>wallet:&lt;addr&gt;</Code>), social users off their display name (<Code>user:&lt;name&gt;</Code>). The same id is written on the token at launch and used to filter the portfolio.
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
+            A <strong>Portfolio</strong> link appears in the navbar and the profile dropdown once a user is connected, plus a <strong>View my tokens</strong> button on the launched screen.
+          </p>
+
           {/* ════════════════════════════════════════════
               AUTH & WALLETS
           ════════════════════════════════════════════ */}
@@ -535,19 +577,19 @@ console.log("Token live:", result.mintAddress);`} />
 
           <H2 id="session">Session management</H2>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
-            The app maintains two parallel auth states:
+            Identity is unified through the <Code>useConnectedUser()</Code> hook (<Code>src/lib/useConnectedUser.ts</Code>), which merges two sources and survives navigation and reloads:
           </p>
           <ul className="list-disc list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-            <li><strong>NextAuth session</strong> — stored in a signed JWT cookie, persists across page loads. Read via <Code>useSession()</Code> in the Navbar.</li>
-            <li><strong>Wallet state</strong> — stored in React state (<Code>useState</Code>), lives for the current tab session only. Managed by <Code>walletUser</Code> prop.</li>
+            <li><strong>NextAuth session</strong> — stored in a signed JWT cookie, persists across page loads. Read via <Code>useSession()</Code>.</li>
+            <li><strong>Wallet state</strong> — persisted to <Code>localStorage</Code> (key <Code>impactai:wallet-user</Code>) so a connected wallet is still recognized on <Code>/portfolio</Code> and after a refresh.</li>
           </ul>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
-            The Navbar renders the wallet user first, falling back to the NextAuth user if no wallet is connected:
+            Wallet identity takes priority; the hook returns a single <Code>user</Code> plus <Code>walletUser</Code>, <Code>setWalletUser</Code>, and <Code>disconnect</Code>:
           </p>
-          <CodeBlock language="typescript" code={`const displayName =
-  walletUser?.displayName ??   // wallet takes priority
-  oauthUser?.name ??           // then NextAuth name
-  oauthUser?.email?.split("@")[0];  // then email prefix`} />
+          <CodeBlock language="typescript" code={`const { user, walletUser, setWalletUser, disconnect } = useConnectedUser();
+
+// user = persisted wallet user, else the NextAuth session user
+// creatorIdOf(user) → stable id used to attribute & filter launched tokens`} />
 
           {/* ════════════════════════════════════════════
               API REFERENCE
@@ -555,7 +597,7 @@ console.log("Token live:", result.mintAddress);`} />
 
           <H2 id="api-generate">POST /api/generate</H2>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
-            Route that calls the Gemini API and returns a structured token object.
+            Route that calls the Gemini API and returns a structured token object. The cause text is sanitized (control characters stripped, whitespace collapsed) and length-validated before it reaches the model, and the endpoint is rate-limited per client IP (10 requests / minute) to protect against abuse and runaway cost.
           </p>
           <H3 id="generate-request">Request</H3>
           <CodeBlock language="json" code={`POST /api/generate
@@ -589,9 +631,10 @@ Content-Type: application/json
                 {[
                   ["400", "Cause text missing or under 5 characters"],
                   ["400", "Cause text over 300 characters"],
+                  ["429", "Rate limit exceeded — too many requests from this IP"],
                   ["500", "GEMINI_API_KEY not set in environment"],
                   ["502", "Gemini API returned a non-200 response"],
-                  ["500", "AI response could not be parsed as valid JSON"],
+                  ["502", "AI response empty or could not be parsed as valid JSON"],
                 ].map(([s, r]) => (
                   <tr key={r} className="bg-light-surface dark:bg-dark-surface">
                     <td className="px-4 py-3 font-mono text-xs text-red-500">{s}</td>
@@ -601,6 +644,51 @@ Content-Type: application/json
               </tbody>
             </table>
           </div>
+
+          <H2 id="api-tokens">Tokens API</H2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+            CRUD-ish endpoints over the Redis token store. Backed by <Code>src/lib/tokens.ts</Code>.
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-light-border dark:border-dark-border mb-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-light-surface2 dark:bg-dark-surface2 border-b border-light-border dark:border-dark-border">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Endpoint</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-light-border dark:divide-dark-border">
+                {[
+                  ["GET  /api/tokens",        "List all launched tokens, newest first"],
+                  ["POST /api/tokens",        "Save a launched token (sets creatorId, stats start at 0)"],
+                  ["GET  /api/tokens/[id]",   "Fetch a single token by id (used for live-stat polling)"],
+                  ["PATCH /api/tokens/[id]",  "Update a token's stats / proof photos"],
+                  ["GET  /api/tokens/stats",  "Aggregate platform stats (totals + countries)"],
+                ].map(([ep, desc]) => (
+                  <tr key={ep} className="bg-light-surface dark:bg-dark-surface">
+                    <td className="px-4 py-3 font-mono text-xs text-brand-gold whitespace-nowrap">{ep}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <H3 id="tokens-post">POST body &amp; saved shape</H3>
+          <CodeBlock language="json" code={`POST /api/tokens
+{
+  "name": "EthioSolar",
+  "ticker": "ESOL",
+  "description": "...",
+  "emoji": "☀️",
+  "causeWallet": "...",
+  "viralHook": "...",
+  "tags": ["energy", "solar"],
+  "creatorId": "wallet:7xk...",   // stable creator identity
+  "creatorWallet": "7xk...",
+  "creatorDisplay": "7xk…9fA"
+}
+
+// → 201 { token: LiveToken }  (raised/supporters/volume24h/change24h/txCount = 0)`} />
 
           <H2 id="api-auth">NextAuth routes</H2>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
@@ -628,6 +716,9 @@ vercel
 vercel env add GEMINI_API_KEY
 vercel env add NEXTAUTH_SECRET
 vercel env add NEXTAUTH_URL          # https://your-app.vercel.app
+# Storage — or add a Vercel KV / Upstash store, which injects these for you
+vercel env add KV_REST_API_URL
+vercel env add KV_REST_API_TOKEN
 vercel env add GOOGLE_CLIENT_ID
 vercel env add GOOGLE_CLIENT_SECRET
 vercel env add GITHUB_CLIENT_ID
@@ -635,6 +726,9 @@ vercel env add GITHUB_CLIENT_SECRET
 
 # Deploy to production
 vercel --prod`} />
+          <Callout type="warning">
+            Changing environment variables in Vercel does <strong>not</strong> redeploy automatically. After adding or editing vars (e.g. connecting storage), trigger a fresh deployment so the new values take effect.
+          </Callout>
           <Callout type="warning">
             Remember to update your OAuth redirect URIs in the Google Cloud Console and GitHub developer settings to match your Vercel production URL before going live.
           </Callout>
@@ -646,18 +740,19 @@ vercel --prod`} />
               ["Generate a strong NEXTAUTH_SECRET with openssl rand -base64 32", "critical"],
               ["Update Google OAuth redirect URI to production URL", "critical"],
               ["Update GitHub OAuth callback URL to production URL", "critical"],
+              ["Connect Upstash/Vercel KV storage (KV_REST_API_URL / KV_REST_API_TOKEN)", "critical"],
               ["Add BAGS_API_KEY from dev.bags.fm", "required"],
               ["Replace mock launch with real bagsSDK.launchToken() call", "required"],
               ["Add a real cause wallet Solana address for fee routing", "required"],
+              ["Rate limiting on /api/generate", "done"],
               ["Set up IPFS or similar for proof-of-impact photo uploads", "optional"],
-              ["Add rate limiting to /api/generate to prevent abuse", "optional"],
-              ["Wire up a real database if you want persistent user data", "optional"],
+              ["Wire up live on-chain stats polling for launched tokens", "optional"],
             ].map(([item, level]) => (
               <div key={item} className="flex items-start gap-3 p-3 rounded-xl bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border">
-                <div className={cn("w-2 h-2 rounded-full flex-shrink-0 mt-1.5", level === "critical" ? "bg-red-500" : level === "required" ? "bg-brand-gold" : "bg-gray-300 dark:bg-gray-700")} />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
-                <span className={cn("ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0", level === "critical" ? "bg-red-100 dark:bg-red-950/30 text-red-500" : level === "required" ? "bg-brand-gold/10 text-brand-gold" : "bg-gray-100 dark:bg-gray-800 text-gray-400")}>
-                  {level}
+                <div className={cn("w-2 h-2 rounded-full flex-shrink-0 mt-1.5", level === "critical" ? "bg-red-500" : level === "required" ? "bg-brand-gold" : level === "done" ? "bg-brand-green" : "bg-gray-300 dark:bg-gray-700")} />
+                <span className={cn("text-sm text-gray-700 dark:text-gray-300", level === "done" && "line-through opacity-60")}>{item}</span>
+                <span className={cn("ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0", level === "critical" ? "bg-red-100 dark:bg-red-950/30 text-red-500" : level === "required" ? "bg-brand-gold/10 text-brand-gold" : level === "done" ? "bg-brand-green/10 text-brand-green" : "bg-gray-100 dark:bg-gray-800 text-gray-400")}>
+                  {level === "done" ? "✓ done" : level}
                 </span>
               </div>
             ))}
