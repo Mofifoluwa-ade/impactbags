@@ -62,32 +62,59 @@ export async function POST(req: NextRequest) {
     // Gemini 2.5 Flash — fast, free tier available, great for structured JSON output
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    const geminiRes = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: AI_GENERATE_PROMPT(cleanCause) }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 800,
-          responseMimeType: "application/json", // forces Gemini to return pure JSON
-          // Gemini 2.5 Flash "thinks" by default, and those tokens share the
-          // maxOutputTokens budget — leaving too few for the JSON and truncating
-          // it (→ parse errors). This is a simple naming task, so disable it.
-          thinkingConfig: { thinkingBudget: 0 },
+    const payload = JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: AI_GENERATE_PROMPT(cleanCause) }],
         },
-      }),
+      ],
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 800,
+        responseMimeType: "application/json", // forces Gemini to return pure JSON
+        // Gemini 2.5 Flash "thinks" by default, and those tokens share the
+        // maxOutputTokens budget — leaving too few for the JSON and truncating
+        // it (→ parse errors). This is a simple naming task, so disable it.
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
 
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.text().catch(() => "");
-      console.error("Gemini API error:", geminiRes.status, errBody);
+    // Gemini occasionally returns transient errors (429 rate limit, 500/503
+    // "model overloaded"). Retry those a couple of times with short backoff
+    // before giving up — they usually clear on the next attempt.
+    const TRANSIENT = new Set([429, 500, 503]);
+    let geminiRes: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      geminiRes = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      });
+      if (geminiRes.ok || !TRANSIENT.has(geminiRes.status)) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+    }
+
+    if (!geminiRes || !geminiRes.ok) {
+      const status = geminiRes?.status ?? 0;
+      const errBody = geminiRes ? await geminiRes.text().catch(() => "") : "";
+      console.error("Gemini API error:", status, errBody);
+
+      // Map upstream status to an accurate client message — don't blame the API
+      // key for an overload or rate-limit.
+      if (status === 503 || status === 500 || status === 429) {
+        return NextResponse.json<GenerateApiResponse>(
+          { error: "The AI is busy right now. Please try again in a few seconds." },
+          { status: 503, headers: { "Retry-After": "5" } }
+        );
+      }
+      if (status === 401 || status === 403) {
+        return NextResponse.json<GenerateApiResponse>(
+          { error: "AI request was rejected — check the GEMINI_API_KEY configured on the server." },
+          { status: 502 }
+        );
+      }
       return NextResponse.json<GenerateApiResponse>(
-        { error: `AI service returned ${geminiRes.status}. Check your Gemini API key.` },
+        { error: `AI service error (${status || "no response"}). Please try again.` },
         { status: 502 }
       );
     }
